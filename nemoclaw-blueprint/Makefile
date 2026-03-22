@@ -1,4 +1,4 @@
-.PHONY: lint format check
+.PHONY: lint format check test
 
 lint:
 	ruff check .
@@ -11,3 +11,6 @@ check:
 	ruff check .
 	ruff format --check .
 	uv run --with pyright pyright .
+
+test:
+	python -m pytest tests/ -v
