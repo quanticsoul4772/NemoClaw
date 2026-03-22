@@ -1,0 +1,98 @@
+name: Documentation Issue
+description: Report incorrect, missing, or unclear documentation
+title: "[Docs]: "
+labels: ["documentation", "needs-triage"]
+assignees:
+  - NVIDIA/docs-team
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve NemoClaw documentation! Clear docs are critical for both humans and AI agents.
+
+  - type: dropdown
+    id: doc_type
+    attributes:
+      label: Documentation Type
+      description: What type of documentation issue is this?
+      options:
+        - Incorrect/Outdated - Documentation is wrong or out of date
+        - Missing - Documentation doesn't exist for this topic
+        - Unclear/Confusing - Documentation exists but is hard to understand
+        - Broken Links - Links don't work or point to wrong location
+        - Typo/Grammar - Spelling or grammar issues
+        - Code Example - Code examples are wrong or don't work
+    validations:
+      required: true
+
+  - type: textarea
+    id: location
+    attributes:
+      label: Documentation Location
+      description: Where is the documentation issue located?
+      placeholder: |
+        - File: docs/quickstart.md (line 42)
+        - URL: https://github.com/NVIDIA/NemoClaw/blob/main/README.md#installation
+        - Section: "Installation" in README.md
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: What's Wrong?
+      description: Describe the documentation issue in detail
+      placeholder: |
+        The documentation says to run `npm install`, but this fails because...
+        The example code doesn't work because...
+        The explanation of X is confusing because...
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested Fix
+      description: How should the documentation be corrected or improved?
+      placeholder: |
+        The documentation should instead say...
+        Add an explanation of...
+        Update the example to...
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What were you trying to accomplish when you found this issue?
+      placeholder: |
+        I was trying to...
+        As a new contributor, I expected...
+        This affects autonomous agents because...
+
+  - type: dropdown
+    id: audience
+    attributes:
+      label: Affected Audience
+      description: Who is primarily affected by this documentation issue?
+      options:
+        - New Users - People installing NemoClaw for the first time
+        - Contributors - People developing NemoClaw itself
+        - Autonomous Agents - AI agents working on the codebase
+        - Advanced Users - People customizing or extending NemoClaw
+        - Everyone
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I'm willing to submit a pull request to fix this documentation issue
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context or screenshots
+      placeholder: Add any other context about the documentation issue here

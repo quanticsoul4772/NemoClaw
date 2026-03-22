@@ -93,7 +93,7 @@ The following endpoint groups are allowed by default:
 
 :::
 
-All endpoints use TLS termination and are enforced at port 443.
+Most endpoints use `access: full` (CONNECT tunneling) for compatibility with streaming APIs. Only `openclaw_docs` uses TLS termination with L7 inspection to enforce GET-only access. All endpoints are enforced at port 443.
 
 ### Inference
 

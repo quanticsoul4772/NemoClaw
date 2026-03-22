@@ -1,0 +1,80 @@
+# Pre-commit hooks for NemoClaw
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # General file hygiene
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: no-commit-to-branch
+        args: [--branch, main]
+
+  # Python: Ruff linter and formatter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      # Run Ruff linter
+      - id: ruff
+        name: ruff lint (Python)
+        args: [--fix]
+        files: ^nemoclaw-blueprint/.*\.py$
+      # Run Ruff formatter
+      - id: ruff-format
+        name: ruff format (Python)
+        files: ^nemoclaw-blueprint/.*\.py$
+
+  # TypeScript: ESLint
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v9.17.0
+    hooks:
+      - id: eslint
+        name: eslint (TypeScript)
+        files: ^nemoclaw/src/.*\.ts$
+        types: [file]
+        args: [--fix]
+        additional_dependencies:
+          - eslint@9.39.4
+          - '@typescript-eslint/eslint-plugin@8.57.0'
+          - '@typescript-eslint/parser@8.57.0'
+          - 'eslint-config-prettier@10.1.8'
+          - 'typescript@5.7.2'
+
+  # TypeScript: Prettier
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        name: prettier (TypeScript)
+        files: ^nemoclaw/.*\.(ts|js|json|md)$
+        args: [--write]
+        additional_dependencies:
+          - prettier@3.8.1
+
+  # TypeScript: Type checking
+  - repo: local
+    hooks:
+      - id: tsc-check
+        name: tsc --noEmit (TypeScript type check)
+        entry: bash -c 'cd nemoclaw && npm run check --silent || exit 1'
+        language: system
+        files: ^nemoclaw/src/.*\.ts$
+        pass_filenames: false
+
+  # Security: detect secrets
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        args: [--baseline, .secrets.baseline]
+        exclude: package-lock.json|uv.lock

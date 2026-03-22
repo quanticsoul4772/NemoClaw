@@ -1,33 +1,64 @@
-# Dependencies (installed inside container)
+# Dependencies (rebuilt inside image)
 node_modules
-nemoclaw/node_modules
+**/node_modules
 
-# Build artifacts
+# Build output (copied explicitly)
 /dist
 nemoclaw/dist
+
+# Version control
+.git
+.gitignore
+
+# CI/CD and GitHub
+.github/
+.coderabbit.yaml
+
+# Documentation (not needed in sandbox image)
+docs/
+*.md
+!nemoclaw-blueprint/**/*.md
+
+# IDE and editor files
+.vscode/
+.idea/
+.editorconfig
+*.swp
+*.swo
+*~
+
+# Test files
+test/
+**/*.test.js
+**/*.test.ts
+**/*.spec.js
+**/*.spec.ts
+coverage/
+.nyc_output/
+.pytest_cache/
+
+# Python bytecode
 *.pyc
 __pycache__
-.pytest_cache
 
-# Source control and CI
-.git
-.github
+# TypeScript source (dist/ is copied instead)
+nemoclaw/src/
+nemoclaw/tsconfig.json
+nemoclaw/vitest.config.ts
+nemoclaw/eslint.config.mjs
 
-# Documentation (not needed in container)
-docs/
-
-# Development config (not needed in container)
-.editorconfig
-.nvmrc
-.python-version
-.secrets.baseline
-
-# IDE and OS
-.vscode
-.idea
-*.swp
+# OS files
 .DS_Store
+Thumbs.db
 
-# Env files (never send to Docker daemon)
+# Environment and secrets
 .env
 .env.*
+.secrets.baseline
+*.log
+
+# Dev config
+.husky/
+commitlint.config.js
+.nvmrc
+.python-version
