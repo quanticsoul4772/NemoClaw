@@ -1220,12 +1220,42 @@ cat .factory/skills/check-code-quality/SKILL.md
 
 ---
 
+## Architecture Documentation
+
+**Visual architecture diagrams** are available in `docs/architecture/` with comprehensive documentation:
+
+1. **[System Overview](docs/architecture/system-overview.mermaid)** - Complete component architecture showing CLI → Plugin → Blueprint → Gateway → Inference flow with all major components and their relationships
+
+2. **[Onboarding Flow](docs/architecture/onboarding-flow.mermaid)** - Detailed sequence diagram of the onboarding process including preflight checks, blueprint execution, sandbox deployment, and inference configuration
+
+3. **[Inference Routing](docs/architecture/inference-routing.mermaid)** - Data flow diagram showing request routing, provider selection (NVIDIA Cloud, NIM, vLLM, Ollama), caching, and observability integration
+
+4. **[Component Interactions](docs/architecture/component-interactions.mermaid)** - Code organization showing dependencies between bin/, nemoclaw/src/, nemoclaw-blueprint/, and test/ directories
+
+5. **[Deployment Model](docs/architecture/deployment-model.mermaid)** - Runtime architecture showing npm installation, Docker containers, inference infrastructure, and persistent storage locations
+
+**See [docs/architecture/README.md](docs/architecture/README.md)** for:
+- How to view and export diagrams
+- Architecture principles and design patterns
+- External dependencies and data flows
+- Security and performance characteristics
+- Extension guides for adding commands/providers/blueprints
+
+**Key concepts** (detailed in diagrams):
+- **Three-layer architecture**: Presentation (CLI/Plugin) → Business Logic (Blueprint) → Infrastructure (OpenShell)
+- **Blueprint lifecycle**: Resolve → Verify → Plan → Apply
+- **Inference routing**: Gateway routes requests to NVIDIA Cloud, NIM, vLLM, or Ollama based on configuration
+- **Observability**: All operations instrumented with logs, traces, metrics, and error tracking
+
+---
+
 ## Additional Resources
 
 - **README.md**: User-facing documentation and quick start
 - **CONTRIBUTING.md**: Contribution guidelines and code style details
 - **SECURITY.md**: Security vulnerability reporting
 - **docs/**: Full Sphinx documentation (build with `make docs`)
+- **docs/architecture/**: Architecture diagrams and design documentation
 - **docs/feature-flags.md**: Complete feature flag documentation
 - **docs/releases.md**: Release notes and changelog automation
 - **.env.example**: Environment variable template and documentation

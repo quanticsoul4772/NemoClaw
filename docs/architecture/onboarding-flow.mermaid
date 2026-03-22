@@ -1,0 +1,50 @@
+sequenceDiagram
+    actor User
+    participant CLI as CLI<br/>(bin/nemoclaw.js)
+    participant Onboard as Onboarding Wizard<br/>(bin/lib/onboard.js)
+    participant Preflight as Preflight Checks<br/>(bin/lib/preflight.js)
+    participant Blueprint as Blueprint Runner<br/>(nemoclaw-blueprint/)
+    participant Gateway as OpenShell Gateway
+    participant Sandbox as Sandbox Container
+    participant Inference as Inference API
+
+    User->>CLI: nemoclaw onboard --profile vllm
+    CLI->>Onboard: Start onboarding wizard
+    
+    Note over Onboard: Interactive configuration
+    Onboard->>Onboard: Select inference profile
+    Onboard->>Onboard: Configure GPU (optional)
+    Onboard->>Onboard: Select model
+    
+    Onboard->>Preflight: Run preflight checks
+    
+    Note over Preflight: System validation
+    Preflight->>Preflight: Check OpenShell installed
+    Preflight->>Preflight: Check Docker running
+    Preflight->>Preflight: Check GPU availability
+    Preflight->>Preflight: Verify credentials
+    Preflight-->>Onboard: ✅ All checks passed
+    
+    Onboard->>Blueprint: Execute blueprint
+    
+    Note over Blueprint: Orchestration lifecycle
+    Blueprint->>Blueprint: Resolve blueprint version
+    Blueprint->>Blueprint: Verify artifact digest
+    Blueprint->>Blueprint: Generate execution plan
+    Blueprint->>Blueprint: Apply plan
+    
+    Blueprint->>Gateway: Deploy sandbox
+    Gateway->>Sandbox: Create container
+    Gateway->>Sandbox: Apply network policy
+    Gateway->>Sandbox: Mount volumes
+    Sandbox-->>Gateway: Container ready
+    Gateway-->>Blueprint: Sandbox deployed
+    
+    Blueprint->>Gateway: Configure inference routing
+    Gateway->>Inference: Test connection
+    Inference-->>Gateway: Connection OK
+    Gateway-->>Blueprint: Routing configured
+    
+    Blueprint-->>Onboard: Deployment complete
+    Onboard-->>CLI: Success with sandbox details
+    CLI-->>User: ✅ Sandbox ready!<br/>Name: openclaw-sandbox-vllm<br/>Model: llama-3.1-8b

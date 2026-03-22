@@ -1,0 +1,48 @@
+graph TB
+    subgraph "User Interface"
+        CLI[CLI Entry Point<br/>bin/nemoclaw.js]
+    end
+
+    subgraph "TypeScript Plugin Layer"
+        Plugin[OpenClaw Plugin<br/>nemoclaw/src/index.ts]
+        Commands[CLI Commands<br/>launch, connect, status]
+        Blueprint[Blueprint Executor<br/>nemoclaw/src/blueprint/]
+    end
+
+    subgraph "Python Orchestration Layer"
+        Runner[Blueprint Runner<br/>orchestrator/runner.py]
+        Policy[Policy Manager<br/>policies/]
+        Migration[State Migration<br/>migrations/snapshot.py]
+    end
+
+    subgraph "OpenShell Infrastructure"
+        Gateway[OpenShell Gateway<br/>Inference Router]
+        Sandbox[Sandbox Container<br/>Isolated Environment]
+        Network[Network Policy<br/>Egress Control]
+    end
+
+    subgraph "External Services"
+        NVIDIA[NVIDIA API<br/>build.nvidia.com]
+        NIM[Local NIM<br/>Optional]
+        vLLM[vLLM Endpoint<br/>Optional]
+    end
+
+    CLI -->|Register Commands| Plugin
+    Plugin -->|Execute| Commands
+    Commands -->|Invoke| Blueprint
+    Blueprint -->|Call Python| Runner
+    Runner -->|Load| Policy
+    Runner -->|Apply| Migration
+    Runner -->|Deploy via| Gateway
+    Gateway -->|Create| Sandbox
+    Gateway -->|Apply| Network
+    Sandbox -->|Route Inference| Gateway
+    Gateway -->|NVIDIA Cloud| NVIDIA
+    Gateway -->|Local Inference| NIM
+    Gateway -->|Local Inference| vLLM
+
+    style CLI fill:#e1f5ff
+    style Plugin fill:#fff4e1
+    style Runner fill:#f0e1ff
+    style Gateway fill:#e1ffe1
+    style NVIDIA fill:#ffe1e1

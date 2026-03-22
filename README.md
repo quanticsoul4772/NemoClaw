@@ -110,6 +110,37 @@ When something goes wrong, errors may originate from either NemoClaw or the Open
 
 ---
 
+## Architecture
+
+NemoClaw follows a three-layer architecture with clear separation between presentation, orchestration, and infrastructure:
+
+```mermaid
+graph TB
+    CLI[CLI Entry Point] --> Plugin[TypeScript Plugin]
+    Plugin --> Blueprint[Python Blueprint]
+    Blueprint --> Gateway[OpenShell Gateway]
+    Gateway --> Sandbox[Isolated Container]
+    Sandbox --> Inference[Inference API]
+```
+
+**Comprehensive architecture diagrams** are available in `docs/architecture/`:
+
+- **[System Overview](docs/architecture/system-overview.mermaid)** - High-level component architecture
+- **[Onboarding Flow](docs/architecture/onboarding-flow.mermaid)** - Complete onboarding sequence diagram
+- **[Inference Routing](docs/architecture/inference-routing.mermaid)** - Request routing and provider selection
+- **[Component Interactions](docs/architecture/component-interactions.mermaid)** - Code organization and dependencies
+- **[Deployment Model](docs/architecture/deployment-model.mermaid)** - Runtime deployment and storage
+
+**Key architectural patterns:**
+- **Layered architecture** - CLI → Plugin → Blueprint → Infrastructure
+- **Blueprint pattern** - Declarative infrastructure as code
+- **Gateway pattern** - Centralized inference routing
+- **Plugin architecture** - Minimal coupling with OpenClaw
+
+See **[docs/architecture/README.md](docs/architecture/README.md)** for detailed architecture documentation, design principles, and extension guides.
+
+---
+
 ## Inference
 
 Inference requests from the agent never leave the sandbox directly. OpenShell intercepts every call and routes it to the NVIDIA cloud provider.

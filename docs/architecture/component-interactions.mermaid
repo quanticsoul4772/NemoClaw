@@ -1,0 +1,77 @@
+graph TB
+    subgraph "bin/ - CLI Entry Points"
+        CLI[nemoclaw.js<br/>Main CLI Dispatcher]
+        Onboard[lib/onboard.js<br/>Onboarding Wizard]
+        Policies[lib/policies.js<br/>Policy Management]
+        NIM[lib/nim.js<br/>NIM Helpers]
+        Creds[lib/credentials.js<br/>Credential Storage]
+        Logger[lib/logger.js<br/>Structured Logging]
+        Metrics[lib/metrics.js<br/>Metrics Collection]
+        Trace[lib/trace-context.js<br/>Distributed Tracing]
+        Sentry[lib/sentry.js<br/>Error Tracking]
+        Flags[lib/feature-flags.js<br/>Feature Flags]
+    end
+
+    subgraph "nemoclaw/src/ - TypeScript Plugin"
+        Index[index.ts<br/>Plugin Entry]
+        CLIReg[cli.ts<br/>Command Registration]
+        Launch[commands/launch.ts]
+        Connect[commands/connect.ts]
+        Status[commands/status.ts]
+        Logs[commands/logs.ts]
+        Migrate[commands/migrate.ts]
+        BPExec[blueprint/executor.ts]
+        BPState[blueprint/state.ts]
+    end
+
+    subgraph "nemoclaw-blueprint/ - Python Orchestration"
+        BlueprintYAML[blueprint.yaml<br/>Manifest]
+        Runner[orchestrator/runner.py<br/>Main Orchestrator]
+        Snapshot[migrations/snapshot.py<br/>State Management]
+        PolicyYAML[policies/openclaw-sandbox.yaml<br/>Network Policy]
+    end
+
+    subgraph "test/ - Test Suite"
+        UnitTests[*.test.js<br/>Unit Tests]
+        IntegTests[integration/*.test.js<br/>Integration Tests]
+    end
+
+    CLI -->|Uses| Onboard
+    CLI -->|Uses| Policies
+    CLI -->|Calls| Index
+    CLI -->|Logs via| Logger
+    CLI -->|Tracks via| Metrics
+    CLI -->|Traces via| Trace
+    CLI -->|Reports via| Sentry
+    CLI -->|Checks| Flags
+
+    Onboard -->|Validates| NIM
+    Onboard -->|Stores| Creds
+    Onboard -->|Executes| BPExec
+
+    Index -->|Registers| CLIReg
+    CLIReg -->|Implements| Launch
+    CLIReg -->|Implements| Connect
+    CLIReg -->|Implements| Status
+    CLIReg -->|Implements| Logs
+    CLIReg -->|Implements| Migrate
+
+    Launch -->|Uses| BPExec
+    Connect -->|Uses| BPExec
+    BPExec -->|Manages| BPState
+    BPExec -->|Spawns| Runner
+
+    Runner -->|Reads| BlueprintYAML
+    Runner -->|Applies| PolicyYAML
+    Runner -->|Snapshots| Snapshot
+
+    UnitTests -->|Test| CLI
+    UnitTests -->|Test| Onboard
+    UnitTests -->|Test| Metrics
+    IntegTests -->|Test| Runner
+    IntegTests -->|Test| BPExec
+
+    style CLI fill:#e1f5ff
+    style Index fill:#fff4e1
+    style Runner fill:#f0e1ff
+    style UnitTests fill:#e1ffe1
