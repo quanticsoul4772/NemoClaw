@@ -351,6 +351,55 @@ npm run docs                  # Generate to nemoclaw/docs/api using TypeDoc
 3. **Doc updates from commits**: Use skill `update-docs-from-commits` via droid
 4. **CI validation**: GitHub Actions builds docs on every push, uploads artifacts
 
+**AGENTS.md Validation**:
+
+This file (AGENTS.md) is automatically validated to ensure accuracy:
+
+```yaml
+# .github/workflows/docs-validation.yml
+- Validates file paths referenced in AGENTS.md exist
+- Verifies npm scripts are defined (test, build, lint, etc.)
+- Checks Makefile targets exist (dev, check, lint, etc.)
+- Validates skills are properly formatted with YAML frontmatter
+- Tests that build commands actually work
+- Runs markdown link checker
+- Executes on every push to main and in PRs
+```
+
+**What gets validated:**
+- ✅ All file paths mentioned in code blocks or documentation
+- ✅ All npm scripts documented in commands sections
+- ✅ All Makefile targets referenced
+- ✅ Skills directory structure and frontmatter format
+- ✅ Build, test, and lint commands are executable
+- ✅ Markdown links (external links checked with retries)
+
+**Run validation locally:**
+```bash
+# GitHub Actions workflow runs automatically on push
+# To test locally, check file existence manually:
+ls bin/nemoclaw.js bin/lib/*.js
+ls nemoclaw/src/*.ts
+ls test/*.test.js
+
+# Verify npm scripts exist
+grep "\"test\":" package.json
+grep "\"build\":" nemoclaw/package.json
+
+# Verify Makefile targets
+grep "^dev:" Makefile
+grep "^check:" Makefile
+```
+
+**Why this matters:**
+- Ensures documentation stays synchronized with code
+- Catches broken references when files are moved/renamed
+- Validates commands still work after dependency updates
+- Prevents stale documentation from misleading agents
+- Maintains trust in AGENTS.md as source of truth
+
+**CI Workflow**: `.github/workflows/docs-validation.yml`
+
 ---
 
 ## Key Conventions
