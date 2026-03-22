@@ -1,9 +1,12 @@
-# NVIDIA NemoClaw: Reference Stack for Running OpenClaw in OpenShell
+# NemoClaw (Community Fork)
+
+> **This is a community-maintained fork of [NVIDIA/NemoClaw](https://github.com/NVIDIA/NemoClaw).**
+> We track upstream, fix bugs, improve performance, and add developer experience enhancements.
+> See [Fork Changes](#fork-changes) below for what's different.
 
 <!-- start-badges -->
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue)](https://github.com/NVIDIA/NemoClaw/blob/main/LICENSE)
-[![Security Policy](https://img.shields.io/badge/Security-Report%20a%20Vulnerability-red)](https://github.com/NVIDIA/NemoClaw/blob/main/SECURITY.md)
-[![Project Status](https://img.shields.io/badge/status-alpha-orange)](https://github.com/NVIDIA/NemoClaw/blob/main/docs/about/release-notes.md)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue)](https://github.com/quanticsoul4772/NemoClaw/blob/main/LICENSE)
+[![Upstream Sync](https://github.com/quanticsoul4772/NemoClaw/actions/workflows/sync-upstream.yml/badge.svg)](https://github.com/quanticsoul4772/NemoClaw/actions/workflows/sync-upstream.yml)
 <!-- end-badges -->
 
 <!-- start-intro -->
@@ -258,6 +261,28 @@ Refer to the documentation for more information on NemoClaw.
 - [Troubleshooting](https://docs.nvidia.com/nemoclaw/latest/reference/troubleshooting.html): Troubleshoot common issues and resolution steps.
 - [Discord](https://discord.gg/XFpfPv9Uvx): Join the community for questions and discussion.
 
+## Fork Changes
+
+This fork tracks [NVIDIA/NemoClaw](https://github.com/NVIDIA/NemoClaw) via daily sync and adds:
+
+**Performance**
+- In-memory caching for credentials, registry, and policy preset loading
+- Non-blocking async delays replacing `spawnSync("sleep")` calls
+- Subprocess timeouts (120s default) preventing indefinite hangs
+- Lazy CLI command imports reducing plugin startup time
+- Docker layer caching optimization and reduced build context
+
+**Developer Experience**
+- Expanded `.dockerignore` (~50MB less build context)
+- Proper Python venv in Dockerfile (no `--break-system-packages`)
+- Debug logging under `NEMOCLAW_VERBOSE` for silent failure paths
+
+**CI/CD**
+- Daily upstream sync workflow
+- Removed NVIDIA-specific workflows requiring internal secrets
+- Updated CODEOWNERS and dependabot for fork governance
+
 ## License
 
 This project is licensed under the [Apache License 2.0](LICENSE).
+Original work copyright NVIDIA CORPORATION & AFFILIATES.
