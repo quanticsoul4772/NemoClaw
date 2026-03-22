@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security Vulnerability (Private Reporting)
+    url: https://github.com/NVIDIA/NemoClaw/blob/main/SECURITY.md
+    about: Report serious security vulnerabilities privately (DO NOT file public issues for exploitable bugs)
+  - name: GitHub Discussions
+    url: https://github.com/NVIDIA/NemoClaw/discussions
+    about: Ask questions, share ideas, or discuss NemoClaw usage with the community
+  - name: NVIDIA Developer Forums
+    url: https://forums.developer.nvidia.com/
+    about: Get help from the broader NVIDIA developer community

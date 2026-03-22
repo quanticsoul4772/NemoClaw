@@ -1,0 +1,109 @@
+name: Security Vulnerability (Public)
+description: Report a low-severity security issue (use SECURITY.md for serious vulnerabilities)
+title: "[Security]: "
+labels: ["security", "needs-triage"]
+assignees:
+  - NVIDIA/security-team
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ⚠️ IMPORTANT - Read Before Proceeding
+        
+        **For serious security vulnerabilities that could be exploited:**
+        - **DO NOT** file a public issue
+        - Follow the responsible disclosure process in [SECURITY.md](https://github.com/NVIDIA/NemoClaw/blob/main/SECURITY.md)
+        - Contact the security team privately
+        
+        **Use this form ONLY for:**
+        - Low-severity security improvements
+        - Security best practice suggestions
+        - Non-exploitable security enhancements
+        - Public security discussions
+        
+        If in doubt, follow [SECURITY.md](https://github.com/NVIDIA/NemoClaw/blob/main/SECURITY.md) instead.
+
+  - type: checkboxes
+    id: severity_confirm
+    attributes:
+      label: Severity Confirmation
+      options:
+        - label: I confirm this is NOT an exploitable vulnerability (if it is, I will use SECURITY.md instead)
+          required: true
+        - label: I confirm this issue can be discussed publicly without risk
+          required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Security Category
+      description: What type of security issue is this?
+      options:
+        - Dependency Security - Outdated or vulnerable dependencies
+        - Configuration Hardening - Security configuration improvements
+        - Secret Management - API key or credential handling improvements
+        - Input Validation - Sanitization or validation suggestions
+        - Authentication/Authorization - Access control improvements
+        - Security Documentation - Missing security guidance
+        - Other Security Enhancement
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Issue Description
+      description: Describe the security concern or improvement
+      placeholder: |
+        What's the security issue or improvement you'd like to suggest?
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Potential Impact
+      description: What's the potential impact if this issue is not addressed?
+      placeholder: |
+        If this is not fixed, an attacker could...
+        This could lead to...
+        The risk is...
+
+  - type: textarea
+    id: recommendation
+    attributes:
+      label: Recommended Fix
+      description: How should this be addressed?
+      placeholder: |
+        Upgrade dependency X to version Y...
+        Add validation for input Z...
+        Document the security implications of...
+
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Links to CVEs, security advisories, or documentation
+      placeholder: |
+        - CVE-XXXX-YYYY: https://...
+        - Security advisory: https://...
+        - OWASP guidance: https://...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      options:
+        - label: I have read SECURITY.md and confirmed this should be a public issue
+          required: true
+        - label: This is not an exploitable vulnerability
+          required: true
+        - label: I have not included any sensitive information in this report
+          required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context about the security issue
+      placeholder: Add any other context here

@@ -19,9 +19,10 @@ select = [
   "W",    # pycodestyle warnings
   "F",    # pyflakes
   "I",    # isort
-  "N",    # pep8-naming
+  "N",    # pep8-naming (enforces PEP 8 naming conventions)
   "UP",   # pyupgrade
   "B",    # flake8-bugbear
+  "C90",  # mccabe (cyclomatic complexity)
   "S",    # flake8-bandit (security)
   "T20",  # flake8-print (catch stray prints — we use them deliberately here)
   "SIM",  # flake8-simplify
@@ -32,6 +33,20 @@ ignore = [
   "S603",  # subprocess call with shell=False — we handle this explicitly
   "S607",  # partial executable path — openshell is expected on PATH
 ]
+
+# McCabe complexity threshold - keep functions maintainable
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+# PEP 8 naming convention enforcement (via pep8-naming "N" rules)
+# - Functions, variables, methods: snake_case
+# - Classes, type aliases: PascalCase
+# - Constants: SCREAMING_SNAKE_CASE
+# - Module names: lowercase_with_underscores
+[tool.ruff.lint.pep8-naming]
+# Allow specific non-standard names if needed
+classmethod-decorators = ["classmethod"]
+staticmethod-decorators = ["staticmethod"]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]

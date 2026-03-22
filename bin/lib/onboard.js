@@ -12,7 +12,8 @@ const nim = require("./nim");
 const policies = require("./policies");
 const { checkCgroupConfig } = require("./preflight");
 const HOST_GATEWAY_URL = "http://host.openshell.internal";
-const EXPERIMENTAL = process.env.NEMOCLAW_EXPERIMENTAL === "1";
+const featureFlags = require("./feature-flags");
+const EXPERIMENTAL = featureFlags.isExperimental();
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -224,8 +225,8 @@ async function setupNim(sandboxName, gpu) {
   const ollamaRunning = !!runCapture("curl -sf http://localhost:11434/api/tags 2>/dev/null", { ignoreError: true });
   const vllmRunning = !!runCapture("curl -sf http://localhost:8000/v1/models 2>/dev/null", { ignoreError: true });
 
-  // Auto-select only with NEMOCLAW_EXPERIMENTAL=1 (prevents silent misconfiguration)
-  if (EXPERIMENTAL) {
+  // Auto-select only with feature flags enabled (prevents silent misconfiguration)
+  if (featureFlags.isAutoSelectEnabled()) {
     if (vllmRunning) {
       console.log("  ✓ vLLM detected on localhost:8000 — using it [experimental]");
       provider = "vllm-local";

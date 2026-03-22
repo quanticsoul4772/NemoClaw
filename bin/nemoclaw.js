@@ -8,6 +8,7 @@ const fs = require("fs");
 const os = require("os");
 
 const { ROOT, SCRIPTS, run, runCapture } = require("./lib/runner");
+const featureFlags = require("./lib/feature-flags");
 const {
   ensureApiKey,
   ensureGithubToken,
@@ -17,12 +18,19 @@ const {
 const registry = require("./lib/registry");
 const nim = require("./lib/nim");
 const policies = require("./lib/policies");
+const { runWithTraceContext } = require("./lib/trace-context");
+const { logger } = require("./lib/logger");
+const { recordCommandExecution, startTimer } = require("./lib/metrics");
+const { initSentry, captureException, addBreadcrumb } = require("./lib/sentry");
+
+// Initialize Sentry error tracking (opt-in via SENTRY_DSN)
+initSentry();
 
 // ── Global commands ──────────────────────────────────────────────
 
 const GLOBAL_COMMANDS = new Set([
   "onboard", "list", "deploy", "setup", "setup-spark",
-  "start", "stop", "status",
+  "start", "stop", "status", "feature-flags",
   "help", "--help", "-h",
 ]);
 
@@ -268,6 +276,16 @@ function sandboxDestroy(sandboxName) {
 
 // ── Help ─────────────────────────────────────────────────────────
 
+function showFeatureFlags() {
+  featureFlags.printStatus();
+  console.log("");
+  console.log("  To enable a flag, set the corresponding environment variable:");
+  console.log("    export NEMOCLAW_EXPERIMENTAL=1");
+  console.log("");
+  console.log("  See docs/feature-flags.md for full documentation.");
+  console.log("");
+}
+
 function help() {
   console.log(`
   nemoclaw — NemoClaw CLI
@@ -296,6 +314,9 @@ function help() {
     nemoclaw stop                    Stop all services
     nemoclaw status                  Show sandbox list and service status
 
+  Configuration:
+    nemoclaw feature-flags           Show feature flag status
+
   Credentials are prompted on first use, then saved securely
   in ~/.nemoclaw/credentials.json (mode 600).
 `);
@@ -306,61 +327,96 @@ function help() {
 const [cmd, ...args] = process.argv.slice(2);
 
 (async () => {
-  // No command → help
-  if (!cmd || cmd === "help" || cmd === "--help" || cmd === "-h") {
-    help();
-    return;
-  }
+  const commandTimer = startTimer("nemoclaw.command.duration", { command: cmd || "help" });
+  
+  // Add breadcrumb for CLI command
+  addBreadcrumb({
+    category: "cli",
+    message: `Executing command: ${cmd || "help"}`,
+    level: "info",
+    data: { command: cmd, args },
+  });
+  
+  try {
+    // Run all commands within a trace context for distributed tracing
+    await runWithTraceContext(cmd || "help", async () => {
+      logger.debug({ command: cmd, args, type: "cli" }, `Executing command: ${cmd || "help"}`);
 
-  // Global commands
-  if (GLOBAL_COMMANDS.has(cmd)) {
-    switch (cmd) {
-      case "onboard":     await onboard(); break;
-      case "setup":       await setup(); break;
-      case "setup-spark": await setupSpark(); break;
-      case "deploy":      await deploy(args[0]); break;
-      case "start":       await start(); break;
-      case "stop":        stop(); break;
-      case "status":      showStatus(); break;
-      case "list":        listSandboxes(); break;
-      default:            help(); break;
+      // No command → help
+      if (!cmd || cmd === "help" || cmd === "--help" || cmd === "-h") {
+        help();
+        return;
+      }
+
+    // Global commands
+    if (GLOBAL_COMMANDS.has(cmd)) {
+      switch (cmd) {
+        case "onboard":       await onboard(); break;
+        case "setup":         await setup(); break;
+        case "setup-spark":   await setupSpark(); break;
+        case "deploy":        await deploy(args[0]); break;
+        case "start":         await start(); break;
+        case "stop":          stop(); break;
+        case "status":        showStatus(); break;
+        case "list":          listSandboxes(); break;
+        case "feature-flags": showFeatureFlags(); break;
+        default:              help(); break;
+      }
+      return;
     }
-    return;
-  }
 
-  // Sandbox-scoped commands: nemoclaw <name> <action>
-  const sandbox = registry.getSandbox(cmd);
-  if (sandbox) {
-    const action = args[0] || "connect";
-    const actionArgs = args.slice(1);
+    // Sandbox-scoped commands: nemoclaw <name> <action>
+    const sandbox = registry.getSandbox(cmd);
+    if (sandbox) {
+      const action = args[0] || "connect";
+      const actionArgs = args.slice(1);
 
-    switch (action) {
-      case "connect":     sandboxConnect(cmd); break;
-      case "status":      sandboxStatus(cmd); break;
-      case "logs":        sandboxLogs(cmd, actionArgs.includes("--follow")); break;
-      case "policy-add":  await sandboxPolicyAdd(cmd); break;
-      case "policy-list": sandboxPolicyList(cmd); break;
-      case "destroy":     sandboxDestroy(cmd); break;
-      default:
-        console.error(`  Unknown action: ${action}`);
-        console.error(`  Valid actions: connect, status, logs, policy-add, policy-list, destroy`);
-        process.exit(1);
+      switch (action) {
+        case "connect":     sandboxConnect(cmd); break;
+        case "status":      sandboxStatus(cmd); break;
+        case "logs":        sandboxLogs(cmd, actionArgs.includes("--follow")); break;
+        case "policy-add":  await sandboxPolicyAdd(cmd); break;
+        case "policy-list": sandboxPolicyList(cmd); break;
+        case "destroy":     sandboxDestroy(cmd); break;
+        default:
+          console.error(`  Unknown action: ${action}`);
+          console.error(`  Valid actions: connect, status, logs, policy-add, policy-list, destroy`);
+          process.exit(1);
+      }
+      return;
     }
-    return;
-  }
 
-  // Unknown command — suggest
-  console.error(`  Unknown command: ${cmd}`);
-  console.error("");
-
-  // Check if it looks like a sandbox name with missing action
-  const allNames = registry.listSandboxes().sandboxes.map((s) => s.name);
-  if (allNames.length > 0) {
-    console.error(`  Registered sandboxes: ${allNames.join(", ")}`);
-    console.error(`  Try: nemoclaw <sandbox-name> connect`);
+    // Unknown command — suggest
+    console.error(`  Unknown command: ${cmd}`);
     console.error("");
-  }
 
-  console.error(`  Run 'nemoclaw help' for usage.`);
-  process.exit(1);
+    // Check if it looks like a sandbox name with missing action
+    const allNames = registry.listSandboxes().sandboxes.map((s) => s.name);
+    if (allNames.length > 0) {
+      console.error(`  Registered sandboxes: ${allNames.join(", ")}`);
+      console.error(`  Try: nemoclaw <sandbox-name> connect`);
+      console.error("");
+    }
+
+    console.error(`  Run 'nemoclaw help' for usage.`);
+    process.exit(1);
+  }, { command: cmd, args });
+    
+    // Record successful command execution
+    const duration = commandTimer();
+    recordCommandExecution(cmd || "help", duration, { status: "success" });
+  } catch (error) {
+    // Record failed command execution
+    const duration = commandTimer();
+    recordCommandExecution(cmd || "help", duration, { status: "error", error: error.message });
+    
+    // Capture error with Sentry
+    captureException(error, {
+      tags: { command: cmd || "help" },
+      extra: { args, duration },
+      level: "error",
+    });
+    
+    throw error;
+  }
 })();

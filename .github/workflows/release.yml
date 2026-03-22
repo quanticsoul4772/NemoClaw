@@ -1,0 +1,189 @@
+name: Release Automation
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Trigger on version tags (v0.1.0, v1.2.3, etc.)
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  contents: write  # Required for creating releases
+
+jobs:
+  release:
+    name: Create Release with Notes
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for changelog generation
+      
+      - name: Get version from tag
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="latest"
+          else
+            VERSION=${GITHUB_REF#refs/tags/}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+      
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          
+          # Get previous tag for comparison
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          
+          if [ -z "$PREV_TAG" ]; then
+            # First release - include all commits
+            COMMIT_RANGE=""
+            echo "First release - including all commits"
+          else
+            COMMIT_RANGE="$PREV_TAG..HEAD"
+            echo "Generating changelog from $PREV_TAG to HEAD"
+          fi
+          
+          # Generate categorized changelog
+          cat > release_notes.md <<'EOF'
+          ## What's Changed
+          
+          ### Features
+          EOF
+          
+          if [ -z "$COMMIT_RANGE" ]; then
+            git log --pretty=format:"- %s (%h)" --grep="^feat" --grep="^feature" --all-match -i >> release_notes.md || echo "- No new features" >> release_notes.md
+          else
+            git log --pretty=format:"- %s (%h)" --grep="^feat" --grep="^feature" --all-match -i $COMMIT_RANGE >> release_notes.md || echo "- No new features" >> release_notes.md
+          fi
+          
+          cat >> release_notes.md <<'EOF'
+          
+          ### Bug Fixes
+          EOF
+          
+          if [ -z "$COMMIT_RANGE" ]; then
+            git log --pretty=format:"- %s (%h)" --grep="^fix" --grep="^bug" --all-match -i --all >> release_notes.md || echo "- No bug fixes" >> release_notes.md
+          else
+            git log --pretty=format:"- %s (%h)" --grep="^fix" --grep="^bug" --all-match -i $COMMIT_RANGE >> release_notes.md || echo "- No bug fixes" >> release_notes.md
+          fi
+          
+          cat >> release_notes.md <<'EOF'
+          
+          ### Documentation
+          EOF
+          
+          if [ -z "$COMMIT_RANGE" ]; then
+            git log --pretty=format:"- %s (%h)" --grep="^docs" -i --all >> release_notes.md || echo "- No documentation changes" >> release_notes.md
+          else
+            git log --pretty=format:"- %s (%h)" --grep="^docs" -i $COMMIT_RANGE >> release_notes.md || echo "- No documentation changes" >> release_notes.md
+          fi
+          
+          cat >> release_notes.md <<'EOF'
+          
+          ### Other Changes
+          EOF
+          
+          if [ -z "$COMMIT_RANGE" ]; then
+            git log --pretty=format:"- %s (%h)" --invert-grep --grep="^feat" --grep="^fix" --grep="^docs" --all-match -i --all | head -20 >> release_notes.md || echo "- Miscellaneous improvements" >> release_notes.md
+          else
+            git log --pretty=format:"- %s (%h)" --invert-grep --grep="^feat" --grep="^fix" --grep="^docs" --all-match -i $COMMIT_RANGE | head -20 >> release_notes.md || echo "- Miscellaneous improvements" >> release_notes.md
+          fi
+          
+          cat >> release_notes.md <<'EOF'
+          
+          ### Contributors
+          
+          Thank you to all contributors who made this release possible!
+          EOF
+          
+          if [ -z "$COMMIT_RANGE" ]; then
+            git log --pretty=format:"@%an" --all | sort -u >> release_notes.md
+          else
+            git log --pretty=format:"@%an" $COMMIT_RANGE | sort -u >> release_notes.md
+          fi
+          
+          echo "" >> release_notes.md
+          echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREV_TAG:-$(git rev-list --max-parents=0 HEAD)}...${VERSION}" >> release_notes.md
+          
+          cat release_notes.md
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          body_path: release_notes.md
+          draft: false
+          prerelease: ${{ contains(steps.get_version.outputs.version, 'alpha') || contains(steps.get_version.outputs.version, 'beta') || contains(steps.get_version.outputs.version, 'rc') }}
+          generate_release_notes: true  # GitHub's built-in release notes as fallback
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Update CHANGELOG.md
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          DATE=$(date +%Y-%m-%d)
+          
+          # Create CHANGELOG.md if it doesn't exist
+          if [ ! -f CHANGELOG.md ]; then
+            cat > CHANGELOG.md <<'EOF'
+          # Changelog
+          
+          All notable changes to this project will be documented in this file.
+          
+          The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+          and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+          
+          EOF
+          fi
+          
+          # Prepend new release to CHANGELOG
+          {
+            head -7 CHANGELOG.md  # Keep header
+            echo ""
+            echo "## [$VERSION] - $DATE"
+            echo ""
+            tail -n +8 release_notes.md  # Add release notes (skip the "## What's Changed" header)
+            echo ""
+            tail -n +8 CHANGELOG.md  # Append existing changelog
+          } > CHANGELOG.md.new
+          
+          mv CHANGELOG.md.new CHANGELOG.md
+          
+          cat CHANGELOG.md
+      
+      - name: Commit CHANGELOG.md
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "docs: update CHANGELOG for ${{ steps.get_version.outputs.version }}" || echo "No changes to commit"
+          git push origin HEAD:main || echo "Could not push CHANGELOG (expected if not on main branch)"
+      
+      - name: Trigger Docker image publish
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'publish-docker.yml',
+              ref: 'main'
+            });
+      
+      - name: Trigger npm publish
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'publish-npm.yml',
+              ref: 'main'
+            });

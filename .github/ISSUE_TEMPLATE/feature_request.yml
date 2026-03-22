@@ -1,0 +1,108 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for NemoClaw
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+assignees:
+  - NVIDIA/nemoclaw-maintainers
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Please fill out this form to help us understand your proposal.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve? What use case does it address?
+      placeholder: |
+        I'm trying to do X, but currently NemoClaw doesn't support Y...
+        This is frustrating because...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How would you like this feature to work?
+      placeholder: |
+        I'd like to be able to...
+        The command/API would look like...
+        This would work by...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative solutions or workarounds?
+      placeholder: |
+        I've tried X but it doesn't work because...
+        An alternative could be Y, but...
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which component would this feature affect?
+      options:
+        - TypeScript Plugin (nemoclaw/)
+        - Python Blueprint (nemoclaw-blueprint/)
+        - CLI Commands (bin/)
+        - Installation/Setup (install.sh)
+        - Documentation
+        - Multiple Components
+        - New Component
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority (from your perspective)
+      description: How important is this feature to you?
+      options:
+        - Critical - Blocking my use of NemoClaw
+        - High - Significant improvement to workflow
+        - Medium - Nice to have
+        - Low - Minor convenience
+    validations:
+      required: true
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use Case Details
+      description: Describe your specific use case in detail
+      placeholder: |
+        I'm building/using NemoClaw for...
+        My workflow involves...
+        This feature would help me...
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Examples
+      description: Code examples, command examples, or mockups showing how this would work
+      render: typescript
+      placeholder: |
+        // Example usage:
+        await nemoclaw.newFeature({
+          option: 'value'
+        });
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I'm willing to contribute a pull request for this feature
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context, screenshots, or related issues
+      placeholder: Add any other context or screenshots about the feature request here

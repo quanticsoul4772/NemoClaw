@@ -9,7 +9,7 @@
 NVIDIA NemoClaw is an open source stack that simplifies running [OpenClaw](https://openclaw.ai) always-on assistants safely. It installs the [NVIDIA OpenShell](https://github.com/NVIDIA/OpenShell) runtime, part of [NVIDIA Agent Toolkit](https://docs.nvidia.com/nemo/agent-toolkit/latest), a secure environment for running autonomous agents, with inference routed through [NVIDIA cloud](https://build.nvidia.com).
 
 > **Alpha software**
-> 
+>
 > NemoClaw is early-stage. Expect rough edges. We are building toward production-ready sandbox orchestration, but the starting point is getting your own environment up and running.
 > Interfaces, APIs, and behavior may change without notice as we iterate on the design.
 > The project is shared to gather feedback and enable early experimentation, but it
@@ -173,12 +173,299 @@ See the full [CLI reference](https://docs.nvidia.com/nemoclaw/latest/reference/c
 
 Refer to the documentation for more information on NemoClaw.
 
+### For Developers and Autonomous Agents
+
+- **[AGENTS.md](AGENTS.md)**: **Start here!** Comprehensive development guide for contributors and autonomous agents. Covers setup, build commands, test commands, code conventions, and common tasks.
+
+### Documentation
+
 - [Overview](https://docs.nvidia.com/nemoclaw/latest/about/overview.html): what NemoClaw does and how it fits together
 - [How It Works](https://docs.nvidia.com/nemoclaw/latest/about/how-it-works.html): plugin, blueprint, and sandbox lifecycle
 - [Architecture](https://docs.nvidia.com/nemoclaw/latest/reference/architecture.html): plugin structure, blueprint lifecycle, and sandbox environment
 - [Inference Profiles](https://docs.nvidia.com/nemoclaw/latest/reference/inference-profiles.html): NVIDIA cloud inference configuration
 - [Network Policies](https://docs.nvidia.com/nemoclaw/latest/reference/network-policies.html): egress control and policy customization
 - [CLI Commands](https://docs.nvidia.com/nemoclaw/latest/reference/commands.html): full command reference
+
+## Security
+
+### Environment Variables and Secrets
+
+NemoClaw uses environment variables for sensitive configuration like API keys. **Never commit `.env` files to version control.**
+
+1. **Copy the template:**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Fill in your values:**
+   - `NVIDIA_API_KEY`: Get from [build.nvidia.com](https://build.nvidia.com)
+   - Optional bot tokens for Telegram, Slack, or Discord integrations
+
+3. **Verify `.env` is ignored:**
+   ```bash
+   git check-ignore .env  # Should output: .env
+   ```
+
+The `.gitignore` file is configured to exclude:
+- `.env` and all `.env.*` files (except `.env.example`)
+- IDE configs (.vscode/, .idea/)
+- SSH keys and credentials
+- Certificates and keystores
+
+Pre-commit hooks include secret scanning via `detect-secrets` to catch accidental commits of sensitive data.
+
+### Automated Dependency Updates
+
+Dependabot automatically monitors dependencies and creates pull requests for updates:
+- **Schedule**: Weekly on Mondays at 9:00 AM
+- **Coverage**: npm (TypeScript), Python, GitHub Actions, Docker
+- **Grouping**: Minor and patch updates grouped together to reduce noise
+- **Labels**: Auto-tagged with `dependencies` for easy filtering
+
+Configuration: `.github/dependabot.yml`
+
+See [SECURITY.md](SECURITY.md) for reporting security vulnerabilities.
+
+## Feature Flags
+
+NemoClaw supports feature flags for safe rollout of experimental features:
+
+```bash
+# Enable all experimental features (local inference, new endpoints)
+export NEMOCLAW_EXPERIMENTAL=1
+
+# Check which flags are active
+nemoclaw feature-flags
+```
+
+See [docs/feature-flags.md](docs/feature-flags.md) for complete documentation of all available flags.
+
+---
+
+## Releases and Changelog
+
+NemoClaw uses automated release notes generation. All changes are documented in [CHANGELOG.md](CHANGELOG.md).
+
+**Creating a release**:
+```bash
+git tag -a v0.2.0 -m "Release v0.2.0"
+git push origin v0.2.0
+# GitHub Actions automatically generates release notes
+```
+
+**Commit message conventions** (for contributors):
+- `feat:` → Features section
+- `fix:` → Bug Fixes section  
+- `docs:` → Documentation section
+
+See [docs/releases.md](docs/releases.md) for complete release documentation.
+
+**Published artifacts**:
+- **Docker images**: `ghcr.io/nvidia/nemoclaw` (GitHub Container Registry)
+- **npm package**: `nemoclaw` (npm registry)
+
+See [docs/deployment.md](docs/deployment.md) for deployment automation details.
+
+**Observability**:
+- **Structured logging**: JSON logs with pino for better debugging and monitoring
+- **Distributed tracing**: Trace ID propagation through CLI → Blueprint → Sandbox → Inference
+- **Metrics collection**: Performance telemetry (command duration, inference latency, error rates)
+- **Error tracking**: Sentry integration with source maps, breadcrumbs, and trace context (opt-in)
+- **Alerting**: Alert rules for PagerDuty/OpsGenie/Slack (error rate, latency, service health)
+- **Product analytics**: PostHog integration for feature usage tracking and impact measurement (opt-in)
+- **Error to insight pipeline**: Automatic GitHub issue creation from production errors via Sentry integration
+- See [docs/observability.md](docs/observability.md) for full documentation
+
+**Error to Insight Pipeline:**
+
+Automatically convert production errors into actionable GitHub issues:
+
+```bash
+# Configure Sentry-GitHub integration
+SENTRY_ORG=your-org
+SENTRY_PROJECT=nemoclaw
+```
+
+**Workflow:**
+1. Error occurs in production → Sentry captures with full context
+2. Sentry creates GitHub issue automatically (for new/high-impact errors)
+3. Issue includes: stack trace, breadcrumbs, user impact, Sentry link
+4. Developer fixes bug, commits with "Fixes #123"
+5. Issue auto-closes, Sentry marks error as resolved
+6. If error recurs → Issue reopened (regression alert)
+
+**Benefits:**
+- No manual error copying
+- Rich context in GitHub issues
+- Automatic deduplication
+- Workflow integration
+
+For complete setup guide, see [docs/error-to-insight-pipeline.md](docs/error-to-insight-pipeline.md).
+
+---
+
+## Monitoring
+
+NemoClaw provides comprehensive observability for production deployments.
+
+**Dashboard Setup:**
+
+Create dashboards in your monitoring platform using the metrics collected by NemoClaw:
+
+- **Datadog**: Create dashboard at `https://app.datadoghq.com/dashboard/lists`
+  - Key metrics: `nemoclaw.command.duration`, `nemoclaw.errors`, `nemoclaw.inference.latency`
+  - Add deployment markers with DD Events API
+  
+- **Grafana**: Query Prometheus metrics
+  - Example: `rate(nemoclaw_errors_total[5m])`, `histogram_quantile(0.95, rate(nemoclaw_command_duration_bucket[5m]))`
+  - Create annotations for deployments
+  
+- **New Relic**: Custom NRQL queries
+  - `SELECT percentile(duration, 95) FROM Transaction WHERE appName = 'nemoclaw'`
+  
+- **CloudWatch**: Parse structured logs with Insights
+  - `fields @timestamp, level, msg | filter level = "error" | stats count() by bin(5m)`
+
+**Deploy Notifications:**
+
+Configure Slack/Discord/Teams webhooks to receive deployment notifications:
+
+```bash
+# Example Slack notification
+curl -X POST "$SLACK_WEBHOOK_URL" \
+  -d '{"text": ":rocket: NemoClaw v1.2.3 deployed to production"}'
+```
+
+**Quick Health Check:**
+
+```bash
+# View metrics
+nemoclaw <command> 2>&1 | jq 'select(.metric_type)'
+
+# Check recent errors  
+nemoclaw <command> 2>&1 | jq 'select(.level >= 50)'
+
+# Monitor command duration
+nemoclaw <command> 2>&1 | jq -s '[.[] | select(.metric_name == "nemoclaw.command.duration") | .metric_value] | add / length'
+```
+
+**Production Dashboard Links:**
+
+Once you set up monitoring dashboards, add links here for your team:
+
+```markdown
+- **Metrics**: [Datadog Dashboard](https://app.datadoghq.com/dashboard/[your-dashboard-id])
+- **Errors**: [Sentry Project](https://sentry.io/organizations/[org]/projects/nemoclaw/)
+- **Logs**: [CloudWatch/Grafana Loki/Datadog Logs](https://your-logging-platform.com)
+- **Alerts**: [PagerDuty Service](https://your-org.pagerduty.com/services/[id])
+```
+
+**Alerting:**
+
+Set up alerts for critical issues:
+
+```yaml
+Critical Alerts (Page On-Call):
+  - Error rate > 10/minute for 5 minutes
+  - Service down (no metrics for 5 minutes)
+  - Inference API unavailable (success rate < 50%)
+
+Warning Alerts (Notify Channel):
+  - Elevated errors (> 5/minute for 10 minutes)
+  - High latency (p95 > 5s for 10 minutes)
+  - High memory usage (> 80% for 15 minutes)
+```
+
+For complete alert configurations and integrations, see [docs/observability.md](docs/observability.md#alerting).
+
+---
+
+## Incident Response
+
+**Runbooks and troubleshooting guides:**
+
+NemoClaw provides comprehensive incident response runbooks for production operations.
+
+**Runbook Documentation:** [docs/runbooks.md](docs/runbooks.md)
+
+**Quick Links:**
+- [General Troubleshooting](docs/runbooks.md#general-troubleshooting)
+- [Sandbox Incidents](docs/runbooks.md#sandbox-incidents)
+- [Inference Incidents](docs/runbooks.md#inference-incidents)
+- [Deployment Incidents](docs/runbooks.md#deployment-incidents)
+- [Performance Incidents](docs/runbooks.md#performance-incidents)
+- [Security Incidents](docs/runbooks.md#security-incidents)
+- [Escalation Procedures](docs/runbooks.md#escalation-procedures)
+
+**Common Issues:**
+
+**Sandbox won't start:**
+```bash
+nemoclaw <sandbox> status       # Check status
+docker ps -a | grep <sandbox>   # Check container
+nemoclaw <sandbox> destroy && nemoclaw onboard  # Recreate if needed
+```
+
+**Inference errors:**
+```bash
+echo $NVIDIA_API_KEY | head -c 10  # Verify API key
+curl https://api.nvidia.com/v1/health -H "Authorization: Bearer $NVIDIA_API_KEY"
+```
+
+**Deployment failed:**
+```bash
+npm install && npm run build && npm test  # Local validation
+gh run view <run-id>  # Check CI/CD logs
+```
+
+**Need help?**
+- Runbooks: [docs/runbooks.md](docs/runbooks.md)
+- Support: Create an issue or contact your team's on-call engineer
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, including pre-commit hooks that enforce code quality checks.
+
+**Dev Container:** The fastest way to start contributing is using VS Code Dev Containers (`.devcontainer/devcontainer.json`). All dependencies and tools are pre-configured. Just open in VS Code and click "Reopen in Container".
+
+**Quick start for contributors:**
+
+```bash
+# One command to set up development environment
+make dev  # Installs dependencies, builds plugin, sets up pre-commit hooks
+```
+
+Alternatively, install pre-commit hooks manually:
+
+```bash
+# Install pre-commit hooks (one-time setup)
+pip install pre-commit
+pre-commit install
+
+# Run checks manually
+pre-commit run --all-files
+```
+
+**Pull Request Process:**
+1. **Fill out the PR template** (`.github/pull_request_template.md`) - GitHub loads it automatically
+2. **Run all checks** before submitting:
+   - Tests: `npm test`
+   - Linters: `cd nemoclaw && npm run check` (TypeScript) and `cd nemoclaw-blueprint && make check` (Python)
+   - Pre-commit: `pre-commit run --all-files`
+3. **Review for secrets** - CRITICAL: Check diff for API keys, tokens, credentials before submitting
+4. **Sign commits** - All commits must be signed: `git commit -s`
+5. **Auto-assigned reviewers** - GitHub assigns reviewers based on changed files (`.github/CODEOWNERS`)
+
+**Reporting Issues:**
+Use the appropriate issue template when reporting bugs, requesting features, or suggesting improvements:
+- **Bug Report**: Reproducible issues with detailed environment info
+- **Feature Request**: Enhancement suggestions with use case details
+- **Documentation**: Documentation errors or improvements
+- **Security**: Public security improvements (use [SECURITY.md](SECURITY.md) for serious vulnerabilities)
+
+Templates ensure maintainers and AI agents have the context needed to address your contributions effectively.
 
 ## License
 

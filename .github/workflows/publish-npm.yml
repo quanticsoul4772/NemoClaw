@@ -1,0 +1,75 @@
+name: Publish to npm
+
+on:
+  release:
+    types: [published]  # Trigger when a GitHub Release is published
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  contents: read
+  id-token: write  # Required for provenance
+
+jobs:
+  publish:
+    name: Publish Package to npm
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Build TypeScript plugin
+        run: |
+          cd nemoclaw
+          npm install
+          npm run build
+      
+      - name: Run tests
+        run: npm test
+      
+      - name: Verify package contents
+        run: |
+          npm pack --dry-run
+          echo "Package contents preview:"
+          npm pack --dry-run 2>&1 | grep -E "^npm notice" | tail -20
+      
+      - name: Publish to npm (dry-run for testing)
+        if: github.event_name == 'workflow_dispatch'
+        run: npm publish --dry-run
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      
+      - name: Publish to npm
+        if: github.event_name == 'release' && !github.event.release.prerelease
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      
+      - name: Publish to npm (prerelease tag)
+        if: github.event_name == 'release' && github.event.release.prerelease
+        run: npm publish --provenance --access public --tag next
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      
+      - name: Comment on release
+        if: github.event_name == 'release'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = context.payload.release.tag_name.replace(/^v/, '');
+            const tag = context.payload.release.prerelease ? 'next' : 'latest';
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.release.id,
+              body: `✅ Published to npm as \`nemoclaw@${version}\` with tag \`${tag}\`\n\nInstall: \`npm install nemoclaw@${tag}\``
+            });

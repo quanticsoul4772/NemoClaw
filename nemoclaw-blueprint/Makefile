@@ -1,4 +1,4 @@
-.PHONY: lint format check
+.PHONY: lint format check dead-code
 
 lint:
 	ruff check .
@@ -10,3 +10,6 @@ format:
 check:
 	ruff check .
 	ruff format --check .
+
+dead-code:
+	vulture . --min-confidence 80
