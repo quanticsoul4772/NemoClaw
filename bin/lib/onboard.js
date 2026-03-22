@@ -453,7 +453,18 @@ async function startGateway(gpu) {
       break;
     }
     if (i === 4) {
-      console.error("  Gateway failed to start. Run: openshell gateway info");
+      console.error("");
+      console.error("  Gateway failed to become healthy after 5 attempts.");
+      console.error("");
+      console.error("  Troubleshooting:");
+      console.error("    openshell gateway info    # check gateway status and logs");
+      console.error("    openshell gateway stop    # stop gateway");
+      console.error("    nemoclaw onboard          # retry from scratch");
+      console.error("");
+      console.error("  Common causes:");
+      console.error("    - Docker not running or out of disk space");
+      console.error("    - Port conflict (API 6443, gateway 18789)");
+      console.error("    - Previous gateway still shutting down (wait 30s, retry)");
       process.exit(1);
     }
     sleep(2);
