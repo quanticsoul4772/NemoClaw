@@ -8,6 +8,8 @@
   },
   "scripts": {
     "test": "node --test test/*.test.js",
+    "test:all": "node --test test/*.test.js && cd nemoclaw && npx vitest run",
+    "check": "cd nemoclaw && npm run check",
     "prepare": "husky || true",
     "prepublishOnly": "cd nemoclaw && env -u npm_config_global -u npm_config_prefix -u npm_config_omit npm install --ignore-scripts && ./node_modules/.bin/tsc"
   },

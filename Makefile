@@ -1,9 +1,19 @@
-.PHONY: check lint format lint-ts lint-py format-ts format-py docs docs-strict docs-live docs-clean
+.PHONY: check lint format lint-ts lint-py format-ts format-py test test-js test-py docs docs-strict docs-live docs-clean
 
 check: lint-ts lint-py
 	@echo "All checks passed."
 
 lint: lint-ts lint-py
+
+# --- Testing ---
+
+test: test-js test-py
+
+test-js:
+	npm test
+
+test-py:
+	cd nemoclaw-blueprint && python -m pytest tests/ -v
 
 lint-ts:
 	cd nemoclaw && npm run check

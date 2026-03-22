@@ -41,6 +41,10 @@ pythonVersion = "3.11"
 typeCheckingMode = "strict"
 include = ["orchestrator", "migrations"]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
