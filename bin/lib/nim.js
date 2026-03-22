@@ -4,6 +4,7 @@
 // NIM container management — pull, start, stop, health-check NIM images.
 
 const { run, runCapture, shellQuote } = require("./runner");
+const { logger } = require("./logger");
 const nimImages = require("./nim-images.json");
 
 function containerName(sandboxName) {
@@ -44,7 +45,9 @@ function detectGpu() {
         };
       }
     }
-  } catch {}
+  } catch (err) {
+    logger.debug({ err }, "NVIDIA GPU detection via nvidia-smi failed");
+  }
 
   // Fallback: DGX Spark (GB10) — VRAM not queryable due to unified memory architecture
   try {
@@ -58,7 +61,9 @@ function detectGpu() {
       try {
         const memLine = runCapture("free -m | awk '/Mem:/ {print $2}'", { ignoreError: true });
         if (memLine) totalMemoryMB = parseInt(memLine.trim(), 10) || 0;
-      } catch {}
+      } catch (err) {
+        logger.debug({ err }, "Failed to query system memory for DGX Spark");
+      }
       return {
         type: "nvidia",
         count: 1,
@@ -94,7 +99,9 @@ function detectGpu() {
             try {
               const memBytes = runCapture("sysctl -n hw.memsize", { ignoreError: true });
               if (memBytes) memoryMB = Math.floor(parseInt(memBytes, 10) / 1024 / 1024);
-            } catch {}
+            } catch (err) {
+              logger.debug({ err }, "Failed to query macOS system memory");
+            }
           }
 
           return {
@@ -108,7 +115,9 @@ function detectGpu() {
           };
         }
       }
-    } catch {}
+    } catch (err) {
+      logger.debug({ err }, "macOS GPU detection failed");
+    }
   }
 
   return null;
@@ -159,7 +168,9 @@ function waitForNimHealth(port = 8000, timeout = 300) {
         console.log("  NIM is healthy.");
         return true;
       }
-    } catch {}
+    } catch (err) {
+      logger.debug({ err, port: safePort }, "NIM health check attempt failed");
+    }
     // Synchronous sleep via spawnSync
     require("child_process").spawnSync("sleep", ["5"]);
   }
@@ -192,7 +203,8 @@ function nimStatus(sandboxName) {
       healthy = !!health;
     }
     return { running: state === "running", healthy, container: name, state };
-  } catch {
+  } catch (err) {
+    logger.debug({ err, container: name }, "Failed to get NIM container status");
     return { running: false, container: name };
   }
 }

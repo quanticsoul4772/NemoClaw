@@ -14,7 +14,12 @@ function loadCredentials() {
     if (fs.existsSync(CREDS_FILE)) {
       return JSON.parse(fs.readFileSync(CREDS_FILE, "utf-8"));
     }
-  } catch {}
+  } catch (err) {
+    // Corrupted or unreadable credentials file — start fresh
+    if (process.env.NEMOCLAW_VERBOSE === "1") {
+      console.error(`  Warning: failed to load credentials: ${err.message}`);
+    }
+  }
   return {};
 }
 
@@ -103,7 +108,9 @@ async function ensureGithubToken() {
       process.env.GITHUB_TOKEN = token;
       return;
     }
-  } catch {}
+  } catch {
+    // gh CLI not installed or not authenticated — fall through to manual prompt
+  }
 
   console.log("");
   console.log("  ┌──────────────────────────────────────────────────┐");
