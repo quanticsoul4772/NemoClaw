@@ -1,0 +1,107 @@
+# CODEOWNERS - Code Ownership and Review Requirements
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# This file defines individuals and teams responsible for code in this repository.
+# When a pull request modifies files with defined owners, those owners are automatically
+# requested as reviewers.
+#
+# Order is important; the last matching pattern takes the most precedence.
+# Patterns follow the same syntax as .gitignore files.
+
+# =============================================================================
+# Default Owners
+# =============================================================================
+# These owners will be the default owners for everything in the repo unless
+# a later match takes precedence.
+
+* @NVIDIA/nemoclaw-maintainers
+
+# =============================================================================
+# TypeScript Plugin
+# =============================================================================
+# TypeScript OpenClaw plugin implementation
+
+/nemoclaw/ @NVIDIA/nemoclaw-maintainers @NVIDIA/typescript-reviewers
+/nemoclaw/src/ @NVIDIA/nemoclaw-maintainers @NVIDIA/typescript-reviewers
+/nemoclaw/*.json @NVIDIA/nemoclaw-maintainers
+/nemoclaw/tsconfig.json @NVIDIA/nemoclaw-maintainers @NVIDIA/typescript-reviewers
+/nemoclaw/eslint.config.mjs @NVIDIA/nemoclaw-maintainers @NVIDIA/typescript-reviewers
+
+# =============================================================================
+# Python Blueprint
+# =============================================================================
+# Python sandbox orchestration and policy management
+
+/nemoclaw-blueprint/ @NVIDIA/nemoclaw-maintainers @NVIDIA/python-reviewers
+/nemoclaw-blueprint/orchestrator/ @NVIDIA/nemoclaw-maintainers @NVIDIA/python-reviewers
+/nemoclaw-blueprint/policies/ @NVIDIA/nemoclaw-maintainers @NVIDIA/security-team
+/nemoclaw-blueprint/pyproject.toml @NVIDIA/nemoclaw-maintainers @NVIDIA/python-reviewers
+
+# =============================================================================
+# CLI and Scripts
+# =============================================================================
+# Command-line interface and installation scripts
+
+/bin/ @NVIDIA/nemoclaw-maintainers
+/scripts/ @NVIDIA/nemoclaw-maintainers
+/install.sh @NVIDIA/nemoclaw-maintainers @NVIDIA/devops-team
+/uninstall.sh @NVIDIA/nemoclaw-maintainers @NVIDIA/devops-team
+
+# =============================================================================
+# Documentation
+# =============================================================================
+# Sphinx documentation and guides
+
+/docs/ @NVIDIA/nemoclaw-maintainers @NVIDIA/docs-team
+/README.md @NVIDIA/nemoclaw-maintainers @NVIDIA/docs-team
+/AGENTS.md @NVIDIA/nemoclaw-maintainers @NVIDIA/docs-team
+/CONTRIBUTING.md @NVIDIA/nemoclaw-maintainers @NVIDIA/docs-team
+/spark-install.md @NVIDIA/nemoclaw-maintainers @NVIDIA/docs-team
+
+# =============================================================================
+# Tests
+# =============================================================================
+# Unit and integration tests
+
+/test/ @NVIDIA/nemoclaw-maintainers @NVIDIA/qa-team
+
+# =============================================================================
+# CI/CD and Automation
+# =============================================================================
+# GitHub Actions workflows and automation
+
+/.github/ @NVIDIA/nemoclaw-maintainers @NVIDIA/devops-team
+/.github/workflows/ @NVIDIA/nemoclaw-maintainers @NVIDIA/devops-team
+/.github/dependabot.yml @NVIDIA/nemoclaw-maintainers @NVIDIA/devops-team
+/.pre-commit-config.yaml @NVIDIA/nemoclaw-maintainers @NVIDIA/devops-team
+
+# =============================================================================
+# Security-Sensitive Files
+# =============================================================================
+# Security policies, secret detection, and sensitive configurations
+
+/SECURITY.md @NVIDIA/nemoclaw-maintainers @NVIDIA/security-team
+/.secrets.baseline @NVIDIA/nemoclaw-maintainers @NVIDIA/security-team
+/.env.example @NVIDIA/nemoclaw-maintainers @NVIDIA/security-team
+/nemoclaw-blueprint/policies/ @NVIDIA/nemoclaw-maintainers @NVIDIA/security-team
+
+# =============================================================================
+# Docker and Containerization
+# =============================================================================
+# Docker configurations
+
+/Dockerfile @NVIDIA/nemoclaw-maintainers @NVIDIA/devops-team
+/.dockerignore @NVIDIA/nemoclaw-maintainers @NVIDIA/devops-team
+
+# =============================================================================
+# Root Configuration
+# =============================================================================
+# Root-level configuration files requiring broad review
+
+/package.json @NVIDIA/nemoclaw-maintainers
+/pyproject.toml @NVIDIA/nemoclaw-maintainers
+/Makefile @NVIDIA/nemoclaw-maintainers
+/LICENSE @NVIDIA/nemoclaw-maintainers @NVIDIA/legal-team
+
+# This file itself requires review from maintainers
+/.github/CODEOWNERS @NVIDIA/nemoclaw-maintainers
