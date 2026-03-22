@@ -129,6 +129,7 @@ function runAgentInSandbox(message, sessionId) {
           !l.startsWith("Setting up NemoClaw") &&
           !l.startsWith("[plugins]") &&
           !l.startsWith("(node:") &&
+          !l.includes("node --trace-warnings") &&
           !l.includes("NemoClaw ready") &&
           !l.includes("NemoClaw registered") &&
           !l.includes("openclaw agent") &&
@@ -250,4 +251,7 @@ async function main() {
   poll();
 }
 
-main();
+main().catch((err) => {
+  console.error("Fatal:", err.message || err);
+  process.exit(1);
+});
