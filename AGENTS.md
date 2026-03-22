@@ -359,7 +359,7 @@ npm run docs                  # Generate to nemoclaw/docs/api using TypeDoc
 
 #### TypeScript
 - **Strict TypeScript**: `strict: true` in tsconfig.json
-- **Naming**: 
+- **Naming**:
   - Variables/functions: `camelCase`
   - Classes/interfaces/types: `PascalCase`
   - Constants: `UPPER_CASE` or `camelCase`
@@ -812,8 +812,8 @@ rate(nemoclaw_errors_total{env="production"}[5m])
 avg:nemoclaw.command.duration{env:production} by {command}
 
 # CloudWatch Insights: Error count
-fields @timestamp, level, msg 
-| filter level = "error" 
+fields @timestamp, level, msg
+| filter level = "error"
 | stats count() by bin(5m)
 ```
 
@@ -1155,6 +1155,68 @@ Fixes #456
 - Regression rate (% errors that recur)
 
 **Full documentation:** [docs/error-to-insight-pipeline.md](docs/error-to-insight-pipeline.md)
+
+---
+
+## Repository Skills
+
+NemoClaw provides reusable skills (automation capabilities) for common development tasks. Skills are located in `.factory/skills/` and follow the Claude skills standard.
+
+**Available Skills:**
+
+1. **run-full-test-suite** - Execute complete test suite with coverage
+   - Run all unit and integration tests
+   - Generate coverage reports
+   - Check test performance
+   - Location: `.factory/skills/run-full-test-suite/SKILL.md`
+
+2. **lint-and-format-code** - Lint and format TypeScript and Python
+   - Auto-fix ESLint and Ruff issues
+   - Apply Prettier and Ruff formatting
+   - Verify pre-commit checks pass
+   - Location: `.factory/skills/lint-and-format-code/SKILL.md`
+
+3. **check-code-quality** - Analyze code quality metrics
+   - Check cyclomatic complexity
+   - Detect dead code (knip, vulture)
+   - Find duplicate code (jscpd)
+   - Track technical debt (TODO/FIXME)
+   - Location: `.factory/skills/check-code-quality/SKILL.md`
+
+4. **build-project** - Build TypeScript plugin
+   - Compile TypeScript to JavaScript
+   - Verify type checking passes
+   - Generate type definitions
+   - Location: `.factory/skills/build-project/SKILL.md`
+
+5. **generate-release-notes** - Create changelog from commits
+   - Generate release notes automatically
+   - Update CHANGELOG.md
+   - Follow conventional commits
+   - Location: `.factory/skills/generate-release-notes/SKILL.md`
+
+6. **update-docs-from-commits** - Sync docs with code changes
+   - Scan git commits for user-facing changes
+   - Identify affected documentation pages
+   - Draft documentation updates
+   - Location: `.agents/skills/update-docs-from-commits/SKILL.md`
+
+**Using Skills:**
+
+Skills provide step-by-step instructions for common tasks. Read the SKILL.md file for:
+- When to use the skill
+- Prerequisites and commands
+- Best practices and examples
+- Troubleshooting and success criteria
+
+**Example:**
+```bash
+# To run the full test suite, see:
+cat .factory/skills/run-full-test-suite/SKILL.md
+
+# To check code quality, see:
+cat .factory/skills/check-code-quality/SKILL.md
+```
 
 ---
 

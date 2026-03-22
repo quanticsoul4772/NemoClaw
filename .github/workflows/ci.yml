@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-test:
+    name: Lint, Type-check & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Install plugin dependencies
+        run: |
+          cd nemoclaw
+          npm install
+
+      - name: Build TypeScript
+        run: |
+          cd nemoclaw
+          npm run build
+
+      - name: Lint TypeScript
+        run: |
+          cd nemoclaw
+          npm run lint
+
+      - name: Check formatting
+        run: |
+          cd nemoclaw
+          npx prettier --check 'src/**/*.ts'
+
+      - name: Type-check
+        run: |
+          cd nemoclaw
+          npx tsc --noEmit
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+  python-lint:
+    name: Python Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Ruff
+        run: pip install ruff
+
+      - name: Lint Python code
+        run: ruff check nemoclaw-blueprint/
+
+      - name: Check Python formatting
+        run: ruff format --check nemoclaw-blueprint/
