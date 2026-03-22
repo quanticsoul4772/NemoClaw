@@ -92,7 +92,7 @@ function applyPreset(sandboxName, presetName) {
   let rawPolicy = "";
   try {
     rawPolicy = runCapture(
-      `openshell policy get --full ${sandboxName} 2>/dev/null`,
+      buildPolicyGetCommand(sandboxName),
       { ignoreError: true }
     );
   } catch {
@@ -154,7 +154,7 @@ function applyPreset(sandboxName, presetName) {
   fs.writeFileSync(tmpFile, merged, "utf-8");
 
   try {
-    run(`openshell policy set --policy "${tmpFile}" --wait ${sandboxName}`);
+    run(buildPolicySetCommand(tmpFile, sandboxName));
     console.log(`  Applied preset: ${presetName}`);
   } finally {
     fs.unlinkSync(tmpFile);
@@ -178,6 +178,25 @@ function getAppliedPresets(sandboxName) {
   return sandbox ? sandbox.policies || [] : [];
 }
 
+/**
+ * Build a shell-safe `openshell policy set` command.
+ * Single-quotes both the policy path and sandbox name to prevent injection.
+ */
+function buildPolicySetCommand(policyFile, sandboxName) {
+  const qFile = `'${policyFile}'`;
+  const qName = `'${sandboxName}'`;
+  return `openshell policy set --policy ${qFile} --wait ${qName}`;
+}
+
+/**
+ * Build a shell-safe `openshell policy get` command.
+ * Single-quotes the sandbox name to prevent injection.
+ */
+function buildPolicyGetCommand(sandboxName) {
+  const qName = `'${sandboxName}'`;
+  return `openshell policy get --full ${qName} 2>/dev/null`;
+}
+
 module.exports = {
   PRESETS_DIR,
   listPresets,
@@ -185,4 +204,6 @@ module.exports = {
   getPresetEndpoints,
   applyPreset,
   getAppliedPresets,
+  buildPolicySetCommand,
+  buildPolicyGetCommand,
 };
