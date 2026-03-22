@@ -2,22 +2,22 @@
 # SPDX-License-Identifier: Apache-2.0
 
 preset:
-  name: outlook
-  description: "Microsoft Outlook and Graph API access"
+  name: github
+  description: "GitHub repository and API access (read/write)"
 
 network_policies:
-  outlook_graph:
-    name: outlook_graph
+  github:
+    name: github
     endpoints:
-      - host: graph.microsoft.com
+      - host: github.com
         port: 443
         access: full
-      - host: login.microsoftonline.com
+      - host: api.github.com
         port: 443
         access: full
-      - host: outlook.office365.com
+      - host: raw.githubusercontent.com
         port: 443
         access: full
-      - host: outlook.office.com
+      - host: objects.githubusercontent.com
         port: 443
         access: full
