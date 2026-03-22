@@ -327,7 +327,21 @@ async function preflight() {
 
   // Docker
   if (!isDockerRunning()) {
-    console.error("  Docker is not running. Please start Docker and try again.");
+    console.error("");
+    console.error("  Docker is not running.");
+    console.error("");
+    if (process.platform === "darwin") {
+      console.error("  Start Docker Desktop or Colima, then retry:");
+      console.error("    open -a Docker            # Docker Desktop");
+      console.error("    colima start              # Colima");
+    } else if (process.platform === "linux") {
+      console.error("  Start the Docker daemon, then retry:");
+      console.error("    sudo systemctl start docker");
+    } else {
+      console.error("  Start Docker Desktop, then retry.");
+    }
+    console.error("");
+    console.error("  Then run: nemoclaw onboard");
     process.exit(1);
   }
   console.log("  ✓ Docker is running");
