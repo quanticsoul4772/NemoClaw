@@ -1,0 +1,143 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+/**
+ * CLI registrar for `openclaw nemoclaw <subcommand>`.
+ *
+ * Wires commander.js subcommands to the existing blueprint infrastructure.
+ */
+
+import type { OpenClawPluginApi, PluginCliContext } from "./index.js";
+import { getPluginConfig } from "./index.js";
+
+// Command handlers are lazy-loaded via dynamic import() to avoid pulling in
+// heavy dependencies (tar, JSON5, fs recursive ops, etc.) when only a single
+// subcommand is invoked.  This cuts startup time significantly.
+
+export function registerCliCommands(ctx: PluginCliContext, api: OpenClawPluginApi): void {
+  const { program, logger } = ctx;
+  const pluginConfig = getPluginConfig(api);
+
+  const nemoclaw = program.command("nemoclaw").description("NemoClaw sandbox management");
+
+  // openclaw nemoclaw status
+  nemoclaw
+    .command("status")
+    .description("Show sandbox, blueprint, and inference state")
+    .option("--json", "Output as JSON", false)
+    .action(async (opts: { json: boolean }) => {
+      const { cliStatus } = await import("./commands/status.js");
+      await cliStatus({ json: opts.json, logger, pluginConfig });
+    });
+
+  // openclaw nemoclaw migrate
+  nemoclaw
+    .command("migrate")
+    .description("Migrate host OpenClaw installation into an OpenShell sandbox")
+    .option("--dry-run", "Show what would be migrated without making changes", false)
+    .option("--profile <profile>", "Blueprint profile to use", "default")
+    .option("--skip-backup", "Skip creating a host backup snapshot", false)
+    .action(async (opts: { dryRun: boolean; profile: string; skipBackup: boolean }) => {
+      const { cliMigrate } = await import("./commands/migrate.js");
+      await cliMigrate({
+        dryRun: opts.dryRun,
+        profile: opts.profile,
+        skipBackup: opts.skipBackup,
+        logger,
+        pluginConfig,
+      });
+    });
+
+  // openclaw nemoclaw launch
+  nemoclaw
+    .command("launch")
+    .description("Fresh setup: bootstrap OpenClaw inside OpenShell")
+    .option("--force", "Skip ergonomics warning and force plugin-driven bootstrap", false)
+    .option("--profile <profile>", "Blueprint profile to use", "default")
+    .action(async (opts: { force: boolean; profile: string }) => {
+      const { cliLaunch } = await import("./commands/launch.js");
+      await cliLaunch({
+        force: opts.force,
+        profile: opts.profile,
+        logger,
+        pluginConfig,
+      });
+    });
+
+  // openclaw nemoclaw connect
+  nemoclaw
+    .command("connect")
+    .description("Open an interactive shell inside the OpenClaw sandbox")
+    .option("--sandbox <name>", "Sandbox name to connect to", pluginConfig.sandboxName)
+    .action(async (opts: { sandbox: string }) => {
+      const { cliConnect } = await import("./commands/connect.js");
+      await cliConnect({ sandbox: opts.sandbox, logger });
+    });
+
+  // openclaw nemoclaw logs
+  nemoclaw
+    .command("logs")
+    .description("Stream blueprint execution and sandbox logs")
+    .option("-f, --follow", "Follow log output", false)
+    .option("-n, --lines <count>", "Number of lines to show", "50")
+    .option("--run-id <id>", "Show logs for a specific blueprint run")
+    .action(async (opts: { follow: boolean; lines: string; runId?: string }) => {
+      const { cliLogs } = await import("./commands/logs.js");
+      await cliLogs({
+        follow: opts.follow,
+        lines: parseInt(opts.lines, 10),
+        runId: opts.runId,
+        logger,
+        pluginConfig,
+      });
+    });
+
+  // openclaw nemoclaw eject
+  nemoclaw
+    .command("eject")
+    .description("Rollback from OpenShell and restore host installation")
+    .option("--run-id <id>", "Specific blueprint run ID to rollback from")
+    .option("--confirm", "Skip confirmation prompt", false)
+    .action(async (opts: { runId?: string; confirm: boolean }) => {
+      const { cliEject } = await import("./commands/eject.js");
+      await cliEject({
+        runId: opts.runId,
+        confirm: opts.confirm,
+        logger,
+        pluginConfig,
+      });
+    });
+
+  // openclaw nemoclaw onboard
+  nemoclaw
+    .command("onboard")
+    .description("Interactive setup: configure inference endpoint, credential, and model")
+    .option("--api-key <key>", "API key for endpoints that require one (skips prompt)")
+    .option(
+      "--endpoint <type>",
+      "Endpoint type: build, ncp, nim-local, vllm, ollama, custom (local options are experimental)",
+    )
+    .option("--ncp-partner <name>", "NCP partner name (when endpoint is ncp)")
+    .option("--endpoint-url <url>", "Endpoint URL (for ncp, nim-local, ollama, or custom)")
+    .option("--model <model>", "Model ID to use")
+    .action(
+      async (opts: {
+        apiKey?: string;
+        endpoint?: string;
+        ncpPartner?: string;
+        endpointUrl?: string;
+        model?: string;
+      }) => {
+        const { cliOnboard } = await import("./commands/onboard.js");
+        await cliOnboard({
+          apiKey: opts.apiKey,
+          endpoint: opts.endpoint,
+          ncpPartner: opts.ncpPartner,
+          endpointUrl: opts.endpointUrl,
+          model: opts.model,
+          logger,
+          pluginConfig,
+        });
+      },
+    );
+}
