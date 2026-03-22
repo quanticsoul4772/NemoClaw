@@ -117,7 +117,9 @@ function applyPreset(sandboxName, presetName) {
       buildPolicyGetCommand(sandboxName),
       { ignoreError: true }
     );
-  } catch {}
+  } catch {
+    // No existing policy — will create from scratch
+  }
 
   let currentPolicy = parseCurrentPolicy(rawPolicy);
 

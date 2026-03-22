@@ -13,7 +13,12 @@ function load() {
     if (fs.existsSync(REGISTRY_FILE)) {
       return JSON.parse(fs.readFileSync(REGISTRY_FILE, "utf-8"));
     }
-  } catch {}
+  } catch (err) {
+    // Corrupted or unreadable registry file — start fresh
+    if (process.env.NEMOCLAW_VERBOSE === "1") {
+      console.error(`  Warning: failed to load sandbox registry: ${err.message}`);
+    }
+  }
   return { sandboxes: {}, defaultSandbox: null };
 }
 

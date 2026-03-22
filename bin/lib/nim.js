@@ -6,6 +6,8 @@
 const { run, runCapture, shellQuote } = require("./runner");
 const nimImages = require("./nim-images.json");
 
+const VERBOSE = process.env.NEMOCLAW_VERBOSE === "1";
+
 function containerName(sandboxName) {
   return `nemoclaw-nim-${sandboxName}`;
 }
@@ -44,7 +46,9 @@ function detectGpu() {
         };
       }
     }
-  } catch {}
+  } catch (err) {
+    if (VERBOSE) console.error(`  [debug] NVIDIA GPU detection failed: ${err.message}`);
+  }
 
   // Fallback: DGX Spark (GB10) — VRAM not queryable due to unified memory architecture
   try {
@@ -58,7 +62,9 @@ function detectGpu() {
       try {
         const memLine = runCapture("free -m | awk '/Mem:/ {print $2}'", { ignoreError: true });
         if (memLine) totalMemoryMB = parseInt(memLine.trim(), 10) || 0;
-      } catch {}
+      } catch (err) {
+        if (VERBOSE) console.error(`  [debug] DGX Spark memory query failed: ${err.message}`);
+      }
       return {
         type: "nvidia",
         count: 1,
@@ -94,7 +100,9 @@ function detectGpu() {
             try {
               const memBytes = runCapture("sysctl -n hw.memsize", { ignoreError: true });
               if (memBytes) memoryMB = Math.floor(parseInt(memBytes, 10) / 1024 / 1024);
-            } catch {}
+            } catch (err) {
+              if (VERBOSE) console.error(`  [debug] macOS memory query failed: ${err.message}`);
+            }
           }
 
           return {
@@ -108,7 +116,9 @@ function detectGpu() {
           };
         }
       }
-    } catch {}
+    } catch (err) {
+      if (VERBOSE) console.error(`  [debug] macOS GPU detection failed: ${err.message}`);
+    }
   }
 
   return null;
@@ -159,7 +169,9 @@ function waitForNimHealth(port = 8000, timeout = 300) {
         console.log("  NIM is healthy.");
         return true;
       }
-    } catch {}
+    } catch (err) {
+      if (VERBOSE) console.error(`  [debug] NIM health check failed on port ${safePort}: ${err.message}`);
+    }
     // Synchronous sleep via spawnSync
     require("child_process").spawnSync("sleep", ["5"]);
   }
@@ -192,7 +204,8 @@ function nimStatus(sandboxName) {
       healthy = !!health;
     }
     return { running: state === "running", healthy, container: name, state };
-  } catch {
+  } catch (err) {
+    if (VERBOSE) console.error(`  [debug] NIM status check failed for ${name}: ${err.message}`);
     return { running: false, container: name };
   }
 }

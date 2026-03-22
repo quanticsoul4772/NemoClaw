@@ -327,7 +327,21 @@ async function preflight() {
 
   // Docker
   if (!isDockerRunning()) {
-    console.error("  Docker is not running. Please start Docker and try again.");
+    console.error("");
+    console.error("  Docker is not running.");
+    console.error("");
+    if (process.platform === "darwin") {
+      console.error("  Start Docker Desktop or Colima, then retry:");
+      console.error("    open -a Docker            # Docker Desktop");
+      console.error("    colima start              # Colima");
+    } else if (process.platform === "linux") {
+      console.error("  Start the Docker daemon, then retry:");
+      console.error("    sudo systemctl start docker");
+    } else {
+      console.error("  Start Docker Desktop, then retry.");
+    }
+    console.error("");
+    console.error("  Then run: nemoclaw onboard");
     process.exit(1);
   }
   console.log("  ✓ Docker is running");
@@ -453,7 +467,18 @@ async function startGateway(gpu) {
       break;
     }
     if (i === 4) {
-      console.error("  Gateway failed to start. Run: openshell gateway info");
+      console.error("");
+      console.error("  Gateway failed to become healthy after 5 attempts.");
+      console.error("");
+      console.error("  Troubleshooting:");
+      console.error("    openshell gateway info    # check gateway status and logs");
+      console.error("    openshell gateway stop    # stop gateway");
+      console.error("    nemoclaw onboard          # retry from scratch");
+      console.error("");
+      console.error("  Common causes:");
+      console.error("    - Docker not running or out of disk space");
+      console.error("    - Port conflict (API 6443, gateway 18789)");
+      console.error("    - Previous gateway still shutting down (wait 30s, retry)");
       process.exit(1);
     }
     sleep(2);
