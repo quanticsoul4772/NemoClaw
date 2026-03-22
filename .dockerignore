@@ -1,6 +1,33 @@
+# Dependencies (installed inside container)
 node_modules
+nemoclaw/node_modules
+
+# Build artifacts
 /dist
-.git
+nemoclaw/dist
 *.pyc
 __pycache__
 .pytest_cache
+
+# Source control and CI
+.git
+.github
+
+# Documentation (not needed in container)
+docs/
+
+# Development config (not needed in container)
+.editorconfig
+.nvmrc
+.python-version
+.secrets.baseline
+
+# IDE and OS
+.vscode
+.idea
+*.swp
+.DS_Store
+
+# Env files (never send to Docker daemon)
+.env
+.env.*

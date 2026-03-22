@@ -53,8 +53,14 @@ These are the primary `make` and `npm` targets for day-to-day development:
 | `make check` | Run all linters (TypeScript + Python) |
 | `make lint` | Same as `make check` |
 | `make format` | Auto-format TypeScript and Python source |
+| `make test` | Run all tests (JavaScript + Python) |
+| `make test-js` | Run root-level JavaScript tests only |
+| `make test-py` | Run Python blueprint tests only |
 | `npm test` | Run root-level tests (`test/*.test.js`) |
+| `npm run test:all` | Run root tests + plugin Vitest tests |
+| `npm run check` | Run TypeScript lint + format check + type check |
 | `cd nemoclaw && npm test` | Run plugin unit tests (Vitest) |
+| `make dead-code` | Check for unused variables and imports |
 | `make docs` | Build documentation (Sphinx/MyST) |
 | `make docs-live` | Serve docs locally with auto-rebuild |
 
@@ -148,7 +154,7 @@ Follow these steps to submit a pull request.
 
 1. Create a feature branch from `main`.
 2. Make your changes with tests.
-3. Run `make check` and `npm test` to verify.
+3. Run `make check` and `make test` to verify linting and tests pass.
 4. Open a PR.
 
 ### Commit Messages
