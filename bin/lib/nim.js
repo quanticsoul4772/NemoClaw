@@ -4,8 +4,9 @@
 // NIM container management — pull, start, stop, health-check NIM images.
 
 const { run, runCapture, shellQuote } = require("./runner");
-const { logger } = require("./logger");
 const nimImages = require("./nim-images.json");
+
+const VERBOSE = process.env.NEMOCLAW_VERBOSE === "1";
 
 function containerName(sandboxName) {
   return `nemoclaw-nim-${sandboxName}`;
@@ -46,7 +47,7 @@ function detectGpu() {
       }
     }
   } catch (err) {
-    logger.debug({ err }, "NVIDIA GPU detection via nvidia-smi failed");
+    if (VERBOSE) console.error(`  [debug] NVIDIA GPU detection failed: ${err.message}`);
   }
 
   // Fallback: DGX Spark (GB10) — VRAM not queryable due to unified memory architecture
@@ -62,7 +63,7 @@ function detectGpu() {
         const memLine = runCapture("free -m | awk '/Mem:/ {print $2}'", { ignoreError: true });
         if (memLine) totalMemoryMB = parseInt(memLine.trim(), 10) || 0;
       } catch (err) {
-        logger.debug({ err }, "Failed to query system memory for DGX Spark");
+        if (VERBOSE) console.error(`  [debug] DGX Spark memory query failed: ${err.message}`);
       }
       return {
         type: "nvidia",
@@ -100,7 +101,7 @@ function detectGpu() {
               const memBytes = runCapture("sysctl -n hw.memsize", { ignoreError: true });
               if (memBytes) memoryMB = Math.floor(parseInt(memBytes, 10) / 1024 / 1024);
             } catch (err) {
-              logger.debug({ err }, "Failed to query macOS system memory");
+              if (VERBOSE) console.error(`  [debug] macOS memory query failed: ${err.message}`);
             }
           }
 
@@ -116,7 +117,7 @@ function detectGpu() {
         }
       }
     } catch (err) {
-      logger.debug({ err }, "macOS GPU detection failed");
+      if (VERBOSE) console.error(`  [debug] macOS GPU detection failed: ${err.message}`);
     }
   }
 
@@ -169,7 +170,7 @@ function waitForNimHealth(port = 8000, timeout = 300) {
         return true;
       }
     } catch (err) {
-      logger.debug({ err, port: safePort }, "NIM health check attempt failed");
+      if (VERBOSE) console.error(`  [debug] NIM health check failed on port ${safePort}: ${err.message}`);
     }
     // Synchronous sleep via spawnSync
     require("child_process").spawnSync("sleep", ["5"]);
@@ -204,7 +205,7 @@ function nimStatus(sandboxName) {
     }
     return { running: state === "running", healthy, container: name, state };
   } catch (err) {
-    logger.debug({ err, container: name }, "Failed to get NIM container status");
+    if (VERBOSE) console.error(`  [debug] NIM status check failed for ${name}: ${err.message}`);
     return { running: false, container: name };
   }
 }
