@@ -19,9 +19,9 @@ updates:
       prefix-development: "chore(deps-dev)"
       include: "scope"
     reviewers:
-      - "NVIDIA/nemoclaw-maintainers"
+      - "quanticsoul4772"
     assignees:
-      - "NVIDIA/nemoclaw-maintainers"
+      - "quanticsoul4772"
     # Group minor and patch updates together to reduce PR noise
     groups:
       production-dependencies:
