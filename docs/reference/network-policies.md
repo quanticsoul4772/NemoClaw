@@ -62,39 +62,34 @@ The following endpoint groups are allowed by default:
   - All methods
 
 * - `github`
-  - `github.com:443`
+  - `github.com:443`, `api.github.com:443`
   - `/usr/bin/gh`, `/usr/bin/git`
-  - All methods, all paths
-
-* - `github_rest_api`
-  - `api.github.com:443`
-  - `/usr/bin/gh`
-  - GET, POST, PATCH, PUT, DELETE
+  - All (full access)
 
 * - `clawhub`
   - `clawhub.com:443`
   - `/usr/local/bin/openclaw`
-  - GET, POST
+  - All (full access)
 
 * - `openclaw_api`
   - `openclaw.ai:443`
   - `/usr/local/bin/openclaw`
-  - GET, POST
+  - All (full access)
 
 * - `openclaw_docs`
   - `docs.openclaw.ai:443`
   - `/usr/local/bin/openclaw`
-  - GET only
+  - GET only (TLS terminated)
 
 * - `npm_registry`
-  - `registry.npmjs.org:443`
+  - `registry.npmjs.org:443`, `registry.yarnpkg.com:443`
   - `/usr/local/bin/openclaw`, `/usr/local/bin/npm`
-  - GET only
+  - All (full access)
 
 * - `telegram`
   - `api.telegram.org:443`
   - Any binary
-  - GET, POST on `/bot*/**`
+  - All (full access)
 
 :::
 
