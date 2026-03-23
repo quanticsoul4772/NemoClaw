@@ -41,6 +41,7 @@ ignore = [
 pythonVersion = "3.11"
 typeCheckingMode = "strict"
 include = ["orchestrator", "migrations"]
+exclude = ["tests", ".venv"]
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-cov>=6.0"]
