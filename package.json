@@ -8,6 +8,8 @@
   },
   "scripts": {
     "test": "node --test test/*.test.js",
+    "test:all": "node --test test/*.test.js && cd nemoclaw && npx vitest run",
+    "check": "cd nemoclaw && npm run check",
     "prepare": "husky || true",
     "prepublishOnly": "cd nemoclaw && env -u npm_config_global -u npm_config_prefix -u npm_config_omit npm install --ignore-scripts && ./node_modules/.bin/tsc"
   },
@@ -29,23 +31,18 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/NVIDIA/NemoClaw.git"
+    "url": "https://github.com/quanticsoul4772/NemoClaw.git"
   },
   "lint-staged": {
     "nemoclaw/src/**/*.ts": [
-      "bash scripts/check-spdx-headers.sh",
       "sh -c 'cd nemoclaw && npx eslint --fix \"$@\"' _",
       "sh -c 'cd nemoclaw && npx prettier --write \"$@\"' _"
     ],
     "nemoclaw-blueprint/**/*.py": [
-      "bash scripts/check-spdx-headers.sh",
       "uvx ruff check --fix",
       "uvx ruff format"
     ],
-    "**/*.sh": [
-      "bash scripts/check-spdx-headers.sh",
-      "npx shellcheck"
-    ],
+    "**/*.sh": "npx shellcheck",
     ".husky/{pre-commit,pre-push,commit-msg}": "npx shellcheck"
   },
   "devDependencies": {

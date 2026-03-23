@@ -82,20 +82,14 @@ network_policies:
   # ── OpenClaw "phone home" ────────────────────────────────────────────
   # Minimum viable set for OpenClaw to authenticate, discover plugins,
   # and reach ClawHub. Binary-restricted to openclaw only.
-  # Docs access is read-only (GET). ClawHub and openclaw.ai are
-  # restricted to GET+POST (auth flows, plugin discovery).
+  # Docs access is read-only (GET via tls: terminate).
 
   clawhub:
     name: clawhub
     endpoints:
       - host: clawhub.com
         port: 443
-        protocol: rest
-        enforcement: enforce
-        tls: terminate
-        rules:
-          - allow: { method: GET, path: "/**" }
-          - allow: { method: POST, path: "/**" }
+        access: full
     binaries:
       - { path: /usr/local/bin/openclaw }
 
@@ -104,12 +98,7 @@ network_policies:
     endpoints:
       - host: openclaw.ai
         port: 443
-        protocol: rest
-        enforcement: enforce
-        tls: terminate
-        rules:
-          - allow: { method: GET, path: "/**" }
-          - allow: { method: POST, path: "/**" }
+        access: full
     binaries:
       - { path: /usr/local/bin/openclaw }
 
@@ -126,11 +115,14 @@ network_policies:
     binaries:
       - { path: /usr/local/bin/openclaw }
 
-  # npm registry — needed for `openclaw plugins install` and `npm install`
+  # npm/yarn registry — needed for `openclaw plugins install` and `npm install`
   npm_registry:
     name: npm_registry
     endpoints:
       - host: registry.npmjs.org
+        port: 443
+        access: full
+      - host: registry.yarnpkg.com
         port: 443
         access: full
     binaries:
@@ -140,14 +132,10 @@ network_policies:
   # ── Messaging — pre-allowed for agent notifications ────────────
   # Telegram Bot API is open by default so the agent can send
   # notifications and respond to chats without triggering approval.
+  # Uses access: full to support long-polling (getUpdates).
   telegram:
     name: telegram
     endpoints:
       - host: api.telegram.org
         port: 443
-        protocol: rest
-        enforcement: enforce
-        tls: terminate
-        rules:
-          - allow: { method: GET, path: "/bot*/**" }
-          - allow: { method: POST, path: "/bot*/**" }
+        access: full

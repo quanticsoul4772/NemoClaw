@@ -1,0 +1,30 @@
+{
+  "threshold": 3,
+  "reporters": ["console", "html"],
+  "ignore": [
+    "**/.git/**",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/*.min.js",
+    "**/package-lock.json",
+    "**/uv.lock",
+    "**/.venv/**",
+    "**/__pycache__/**",
+    "**/docs/_build/**",
+    "**/.factory/**"
+  ],
+  "format": ["typescript", "javascript", "python"],
+  "minLines": 5,
+  "minTokens": 50,
+  "maxLines": 500,
+  "maxSize": "100kb",
+  "output": ".jscpd",
+  "absolute": false,
+  "gitignore": true,
+  "blame": false,
+  "silent": false,
+  "verbose": false,
+  "skipComments": true,
+  "exitCode": 0
+}

@@ -6,14 +6,25 @@
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
-const { ROOT, run, runCapture, shellQuote } = require("./runner");
+const { ROOT, run, runCapture } = require("./runner");
 const registry = require("./registry");
 
 const PRESETS_DIR = path.join(ROOT, "nemoclaw-blueprint", "policies", "presets");
 
+// Cache preset list — directory contents rarely change during a session.
+let _presetsCache = null;
+let _presetsDirMtime = 0;
+
 function listPresets() {
   if (!fs.existsSync(PRESETS_DIR)) return [];
-  return fs
+  try {
+    const mtime = fs.statSync(PRESETS_DIR).mtimeMs;
+    if (_presetsCache && _presetsDirMtime === mtime) return _presetsCache;
+    _presetsDirMtime = mtime;
+  } catch {
+    return _presetsCache || [];
+  }
+  _presetsCache = fs
     .readdirSync(PRESETS_DIR)
     .filter((f) => f.endsWith(".yaml"))
     .map((f) => {
@@ -26,14 +37,11 @@ function listPresets() {
         description: descMatch ? descMatch[1].trim() : "",
       };
     });
+  return _presetsCache;
 }
 
 function loadPreset(name) {
-  const file = path.resolve(PRESETS_DIR, `${name}.yaml`);
-  if (!file.startsWith(PRESETS_DIR + path.sep) && file !== PRESETS_DIR) {
-    console.error(`  Invalid preset name: ${name}`);
-    return null;
-  }
+  const file = path.join(PRESETS_DIR, `${name}.yaml`);
   if (!fs.existsSync(file)) {
     console.error(`  Preset not found: ${name}`);
     return null;
@@ -42,13 +50,7 @@ function loadPreset(name) {
 }
 
 function getPresetEndpoints(content) {
-  const hosts = [];
-  const regex = /host:\s*([^\s,}]+)/g;
-  let match;
-  while ((match = regex.exec(content)) !== null) {
-    hosts.push(match[1]);
-  }
-  return hosts;
+  return Array.from(content.matchAll(/host:\s*([^\s,}]+)/g), (m) => m[1]);
 }
 
 /**
@@ -73,31 +75,7 @@ function parseCurrentPolicy(raw) {
   return raw.slice(sep + 3).trim();
 }
 
-/**
- * Build the openshell policy set command with properly quoted arguments.
- */
-function buildPolicySetCommand(policyFile, sandboxName) {
-  return `openshell policy set --policy ${shellQuote(policyFile)} --wait ${shellQuote(sandboxName)}`;
-}
-
-/**
- * Build the openshell policy get command with properly quoted arguments.
- */
-function buildPolicyGetCommand(sandboxName) {
-  return `openshell policy get --full ${shellQuote(sandboxName)} 2>/dev/null`;
-}
-
 function applyPreset(sandboxName, presetName) {
-  // Guard against truncated sandbox names — WSL can truncate hyphenated
-  // names during argument parsing, e.g. "my-assistant" → "m"
-  const isRfc1123Label = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(sandboxName);
-  if (!sandboxName || sandboxName.length > 63 || !isRfc1123Label) {
-    throw new Error(
-      `Invalid or truncated sandbox name: '${sandboxName}'. ` +
-      `Names must be 1-63 chars, lowercase alphanumeric, with optional internal hyphens.`
-    );
-  }
-
   const presetContent = loadPreset(presetName);
   if (!presetContent) {
     console.error(`  Cannot load preset: ${presetName}`);
@@ -117,9 +95,11 @@ function applyPreset(sandboxName, presetName) {
       buildPolicyGetCommand(sandboxName),
       { ignoreError: true }
     );
-  } catch {}
+  } catch {
+    // No existing policy — will create from scratch
+  }
 
-  let currentPolicy = parseCurrentPolicy(rawPolicy);
+  const currentPolicy = parseCurrentPolicy(rawPolicy);
 
   // Merge: inject preset entries under the existing network_policies key
   let merged;
@@ -170,17 +150,14 @@ function applyPreset(sandboxName, presetName) {
   }
 
   // Write temp file and apply
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "nemoclaw-policy-"));
-  const tmpFile = path.join(tmpDir, "policy.yaml");
-  fs.writeFileSync(tmpFile, merged, { encoding: "utf-8", mode: 0o600 });
+  const tmpFile = path.join(os.tmpdir(), `nemoclaw-policy-${Date.now()}.yaml`);
+  fs.writeFileSync(tmpFile, merged, "utf-8");
 
   try {
     run(buildPolicySetCommand(tmpFile, sandboxName));
-
     console.log(`  Applied preset: ${presetName}`);
   } finally {
-    try { fs.unlinkSync(tmpFile); } catch {}
-    try { fs.rmdirSync(tmpDir); } catch {}
+    fs.unlinkSync(tmpFile);
   }
 
   // Update registry
@@ -201,15 +178,32 @@ function getAppliedPresets(sandboxName) {
   return sandbox ? sandbox.policies || [] : [];
 }
 
+/**
+ * Build a shell-safe `openshell policy set` command.
+ * Single-quotes both the policy path and sandbox name to prevent injection.
+ */
+function buildPolicySetCommand(policyFile, sandboxName) {
+  const qFile = `'${policyFile}'`;
+  const qName = `'${sandboxName}'`;
+  return `openshell policy set --policy ${qFile} --wait ${qName}`;
+}
+
+/**
+ * Build a shell-safe `openshell policy get` command.
+ * Single-quotes the sandbox name to prevent injection.
+ */
+function buildPolicyGetCommand(sandboxName) {
+  const qName = `'${sandboxName}'`;
+  return `openshell policy get --full ${qName} 2>/dev/null`;
+}
+
 module.exports = {
   PRESETS_DIR,
   listPresets,
   loadPreset,
   getPresetEndpoints,
-  extractPresetEntries,
-  parseCurrentPolicy,
-  buildPolicySetCommand,
-  buildPolicyGetCommand,
   applyPreset,
   getAppliedPresets,
+  buildPolicySetCommand,
+  buildPolicyGetCommand,
 };

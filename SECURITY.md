@@ -1,24 +1,26 @@
 ## Security
 
-NVIDIA is dedicated to the security and trust of our software products and services, including all source code repositories managed through our organization.
+This is a community fork of [NVIDIA/NemoClaw](https://github.com/NVIDIA/NemoClaw). We take security seriously and appreciate responsible disclosure.
 
-If you need to report a security issue, please use the appropriate contact points outlined below. **Please do not report security vulnerabilities through GitHub.** If a potential security issue is inadvertently reported via a public issue or pull request, NVIDIA maintainers may limit public discussion and redirect the reporter to the appropriate private disclosure channels.
+## Reporting a Vulnerability
 
-## Reporting Potential Security Vulnerability in an NVIDIA Product
+If you discover a security vulnerability in **this fork**, please report it privately:
 
-To report a potential security vulnerability in any NVIDIA product:
-- Web: [Security Vulnerability Submission Form](https://www.nvidia.com/object/submit-security-vulnerability.html)
-- E-Mail: psirt@nvidia.com
-    - We encourage you to use the following PGP key for secure email communication: [NVIDIA public PGP Key for communication](https://www.nvidia.com/en-us/security/pgp-key)
-    - Please include the following information:
-   	 - Product/Driver name and version/branch that contains the vulnerability
-     - Type of vulnerability (code execution, denial of service, buffer overflow, etc.)
-   	 - Instructions to reproduce the vulnerability
-   	 - Proof-of-concept or exploit code
-   	 - Potential impact of the vulnerability, including how an attacker could exploit the vulnerability
+1. **GitHub Security Advisories** (preferred): Use the [Security tab](../../security/advisories/new) to create a private advisory
+2. **GitHub Issues**: For non-sensitive security concerns, open an issue with the `security` label
 
-While NVIDIA currently does not have a bug bounty program, we do offer acknowledgement when an externally reported security issue is addressed under our coordinated vulnerability disclosure policy. Please visit our [Product Security Incident Response Team (PSIRT)](https://www.nvidia.com/en-us/security/psirt-policies/) policies page for more information.
+**Please do not report security vulnerabilities through public GitHub issues if the vulnerability could be exploited before a fix is available.**
 
-## NVIDIA Product Security
+## Scope
 
-For all security-related concerns, please visit NVIDIA's Product Security portal at https://www.nvidia.com/en-us/security
+This policy covers code and configuration changes made in this fork. For vulnerabilities in the upstream NVIDIA NemoClaw project, please report directly to [NVIDIA PSIRT](https://www.nvidia.com/en-us/security/psirt-policies/).
+
+## Response Timeline
+
+- **Acknowledgment**: Within 48 hours
+- **Assessment**: Within 1 week
+- **Fix or mitigation**: As soon as practical, depending on severity
+
+## Supported Versions
+
+Only the latest release on the `main` branch is actively maintained.

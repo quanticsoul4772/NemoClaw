@@ -52,19 +52,33 @@ def load_blueprint() -> dict[str, Any]:
         return yaml.safe_load(f)
 
 
+DEFAULT_CMD_TIMEOUT = 120  # seconds — prevents indefinite hangs
+
+
 def run_cmd(
     args: list[str],
     *,
     check: bool = True,
     capture: bool = False,
+    timeout: int = DEFAULT_CMD_TIMEOUT,
 ) -> subprocess.CompletedProcess[str]:
-    """Run a command as an argv list (never shell=True)."""
-    return subprocess.run(
-        args,
-        check=check,
-        capture_output=capture,
-        text=True,
-    )
+    """Run a command as an argv list (never shell=True).
+
+    Args:
+        timeout: Maximum seconds to wait. Defaults to 120s.
+                 Raises subprocess.TimeoutExpired if exceeded.
+    """
+    try:
+        return subprocess.run(
+            args,
+            check=check,
+            capture_output=capture,
+            text=True,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired:
+        log(f"ERROR: Command timed out after {timeout}s: {' '.join(args)}")
+        raise
 
 
 def openshell_available() -> bool:

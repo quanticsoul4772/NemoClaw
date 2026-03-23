@@ -9,13 +9,29 @@ const { execSync } = require("child_process");
 const CREDS_DIR = path.join(process.env.HOME || "/tmp", ".nemoclaw");
 const CREDS_FILE = path.join(CREDS_DIR, "credentials.json");
 
+// In-memory cache — avoids re-reading/re-parsing JSON on every call.
+let _credsCache = null;
+let _credsCacheMtime = 0;
+
 function loadCredentials() {
   try {
-    if (fs.existsSync(CREDS_FILE)) {
-      return JSON.parse(fs.readFileSync(CREDS_FILE, "utf-8"));
+    if (!fs.existsSync(CREDS_FILE)) return {};
+    const mtime = fs.statSync(CREDS_FILE).mtimeMs;
+    if (_credsCache && _credsCacheMtime === mtime) return _credsCache;
+    _credsCache = JSON.parse(fs.readFileSync(CREDS_FILE, "utf-8"));
+    _credsCacheMtime = mtime;
+    return _credsCache;
+  } catch (err) {
+    if (process.env.NEMOCLAW_VERBOSE === "1") {
+      console.error(`  Warning: failed to load credentials: ${err.message}`);
     }
-  } catch {}
-  return {};
+    return {};
+  }
+}
+
+function _invalidateCredsCache() {
+  _credsCache = null;
+  _credsCacheMtime = 0;
 }
 
 function saveCredential(key, value) {
@@ -23,6 +39,7 @@ function saveCredential(key, value) {
   const creds = loadCredentials();
   creds[key] = value;
   fs.writeFileSync(CREDS_FILE, JSON.stringify(creds, null, 2), { mode: 0o600 });
+  _invalidateCredsCache();
 }
 
 function getCredential(key) {
@@ -36,14 +53,6 @@ function prompt(question) {
     const rl = readline.createInterface({ input: process.stdin, output: process.stderr });
     rl.question(question, (answer) => {
       rl.close();
-      if (!process.stdin.isTTY) {
-        if (typeof process.stdin.pause === "function") {
-          process.stdin.pause();
-        }
-        if (typeof process.stdin.unref === "function") {
-          process.stdin.unref();
-        }
-      }
       resolve(answer.trim());
     });
   });
@@ -103,7 +112,9 @@ async function ensureGithubToken() {
       process.env.GITHUB_TOKEN = token;
       return;
     }
-  } catch {}
+  } catch {
+    // gh CLI not installed or not authenticated — fall through to manual prompt
+  }
 
   console.log("");
   console.log("  ┌──────────────────────────────────────────────────┐");

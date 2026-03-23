@@ -1,0 +1,80 @@
+name: Documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'nemoclaw/src/**'
+      - 'nemoclaw-blueprint/**'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'nemoclaw/src/**'
+      - 'nemoclaw-blueprint/**'
+
+permissions:
+  contents: read
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install documentation dependencies
+        run: |
+          uv sync --group docs
+
+      - name: Build Sphinx documentation
+        run: |
+          uv run --group docs sphinx-build -b html docs docs/_build/html -W --keep-going
+
+      - name: Upload documentation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-html
+          path: docs/_build/html
+          retention-days: 30
+
+  validate-links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install documentation dependencies
+        run: |
+          uv sync --group docs
+
+      - name: Check for broken links
+        run: |
+          uv run --group docs sphinx-build -b linkcheck docs docs/_build/linkcheck
+        continue-on-error: true
+
+      - name: Upload link check results
+        uses: actions/upload-artifact@v4
+        with:
+          name: linkcheck-results
+          path: docs/_build/linkcheck
+          retention-days: 7

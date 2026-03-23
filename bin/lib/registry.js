@@ -8,19 +8,37 @@ const path = require("path");
 
 const REGISTRY_FILE = path.join(process.env.HOME || "/tmp", ".nemoclaw", "sandboxes.json");
 
+// In-memory cache — avoids re-reading/re-parsing the registry on every
+// getSandbox(), getDefault(), listSandboxes(), etc.
+let _registryCache = null;
+let _registryCacheMtime = 0;
+
 function load() {
   try {
-    if (fs.existsSync(REGISTRY_FILE)) {
-      return JSON.parse(fs.readFileSync(REGISTRY_FILE, "utf-8"));
+    if (!fs.existsSync(REGISTRY_FILE)) return { sandboxes: {}, defaultSandbox: null };
+    const mtime = fs.statSync(REGISTRY_FILE).mtimeMs;
+    if (_registryCache && _registryCacheMtime === mtime) return _registryCache;
+    _registryCache = JSON.parse(fs.readFileSync(REGISTRY_FILE, "utf-8"));
+    _registryCacheMtime = mtime;
+    return _registryCache;
+  } catch (err) {
+    if (process.env.NEMOCLAW_VERBOSE === "1") {
+      console.error(`  Warning: failed to load sandbox registry: ${err.message}`);
     }
-  } catch {}
-  return { sandboxes: {}, defaultSandbox: null };
+    return { sandboxes: {}, defaultSandbox: null };
+  }
+}
+
+function _invalidateRegistryCache() {
+  _registryCache = null;
+  _registryCacheMtime = 0;
 }
 
 function save(data) {
   const dir = path.dirname(REGISTRY_FILE);
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   fs.writeFileSync(REGISTRY_FILE, JSON.stringify(data, null, 2), { mode: 0o600 });
+  _invalidateRegistryCache();
 }
 
 function getSandbox(name) {
