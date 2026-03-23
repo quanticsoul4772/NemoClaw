@@ -11,6 +11,7 @@
  * time.
  */
 
+import type { Command } from "commander";
 import { handleSlashCommand } from "./commands/slash.js";
 import {
   describeOnboardEndpoint,
@@ -33,6 +34,12 @@ export interface PluginLogger {
   warn(message: string): void;
   error(message: string): void;
   debug(message: string): void;
+}
+
+/** CLI context passed to registerCliCommands. */
+export interface PluginCliContext {
+  program: Command;
+  logger: PluginLogger;
 }
 
 /** Context passed to slash-command handlers. */
