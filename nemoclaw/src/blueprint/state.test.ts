@@ -2,28 +2,34 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { join } from "node:path";
 import { loadState, saveState, clearState, type NemoClawState } from "./state.js";
 
 const store = new Map<string, string>();
+
+/** Normalize to forward slashes so the store works on Windows + Unix. */
+function norm(p: string): string {
+  return p.replace(/\\/g, "/");
+}
 
 vi.mock("node:fs", async (importOriginal) => {
   const original = await importOriginal();
   return {
     ...original,
-    existsSync: (p: string) => store.has(p),
+    existsSync: (p: string) => store.has(norm(p)),
     mkdirSync: vi.fn(),
     readFileSync: (p: string) => {
-      const content = store.get(p);
+      const content = store.get(norm(p));
       if (content === undefined) throw new Error(`ENOENT: ${p}`);
       return content;
     },
     writeFileSync: (p: string, data: string) => {
-      store.set(p, data);
+      store.set(norm(p), data);
     },
   };
 });
 
-const STATE_PATH = `${process.env.HOME ?? "/tmp"}/.nemoclaw/state/nemoclaw.json`;
+const STATE_PATH = norm(join(process.env.HOME ?? "/tmp", ".nemoclaw", "state", "nemoclaw.json"));
 
 describe("blueprint/state", () => {
   beforeEach(() => {

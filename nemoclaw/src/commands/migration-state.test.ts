@@ -4,6 +4,19 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { PluginLogger } from "../index.js";
 
+// Force POSIX path semantics so tests with Unix-style paths work on Windows.
+// We mock join/resolve/relative/isAbsolute while leaving posix/sep available.
+vi.mock("node:path", async () => {
+  const posix = await import("node:path/posix");
+  const win32 = await import("node:path/win32");
+  return {
+    ...posix,
+    default: { ...posix, posix, win32 },
+    posix,
+    win32,
+  };
+});
+
 // ---------------------------------------------------------------------------
 // fs mock — thin in-memory store keyed by absolute path
 // ---------------------------------------------------------------------------
@@ -15,60 +28,70 @@ interface FsEntry {
 
 const store = new Map<string, FsEntry>();
 
+/** Normalize to forward slashes so the store works on Windows + Unix. */
+function norm(p: string): string {
+  return p.replace(/\\/g, "/");
+}
+
 function addDir(p: string): void {
-  store.set(p, { type: "dir" });
+  store.set(norm(p), { type: "dir" });
 }
 
 function addFile(p: string, content: string): void {
-  store.set(p, { type: "file", content });
+  store.set(norm(p), { type: "file", content });
 }
 
 function addSymlink(p: string): void {
-  store.set(p, { type: "symlink" });
+  store.set(norm(p), { type: "symlink" });
 }
 
 vi.mock("node:fs", async (importOriginal) => {
   const original = await importOriginal();
   return {
     ...original,
-    existsSync: (p: string) => store.has(p),
+    existsSync: (p: string) => store.has(norm(p)),
     mkdirSync: vi.fn((p: string) => {
       addDir(p);
     }),
     readFileSync: (p: string) => {
-      const entry = store.get(p);
+      const np = norm(p);
+      const entry = store.get(np);
       if (!entry || entry.type !== "file") throw new Error(`ENOENT: ${p}`);
       return entry.content ?? "";
     },
     writeFileSync: vi.fn((p: string, data: string) => {
-      store.set(p, { type: "file", content: data });
+      store.set(norm(p), { type: "file", content: data });
     }),
     copyFileSync: vi.fn((src: string, dest: string) => {
-      const entry = store.get(src);
+      const entry = store.get(norm(src));
       if (!entry) throw new Error(`ENOENT: ${src}`);
-      store.set(dest, { ...entry });
+      store.set(norm(dest), { ...entry });
     }),
     cpSync: vi.fn((src: string, dest: string) => {
+      const ns = norm(src);
+      const nd = norm(dest);
       // Shallow copy: copy all entries whose path starts with src
       for (const [k, v] of store) {
-        if (k === src || k.startsWith(src + "/")) {
-          const relative = k.slice(src.length);
-          store.set(dest + relative, { ...v });
+        if (k === ns || k.startsWith(ns + "/")) {
+          const relative = k.slice(ns.length);
+          store.set(nd + relative, { ...v });
         }
       }
     }),
     rmSync: vi.fn(),
     renameSync: vi.fn((oldPath: string, newPath: string) => {
+      const no = norm(oldPath);
+      const nn = norm(newPath);
       for (const [k, v] of store) {
-        if (k === oldPath || k.startsWith(oldPath + "/")) {
-          const relative = k.slice(oldPath.length);
-          store.set(newPath + relative, v);
+        if (k === no || k.startsWith(no + "/")) {
+          const relative = k.slice(no.length);
+          store.set(nn + relative, v);
           store.delete(k);
         }
       }
     }),
     lstatSync: (p: string) => {
-      const entry = store.get(p);
+      const entry = store.get(norm(p));
       if (!entry) throw new Error(`ENOENT: ${p}`);
       return {
         isSymbolicLink: () => entry.type === "symlink",
@@ -77,7 +100,7 @@ vi.mock("node:fs", async (importOriginal) => {
       };
     },
     readdirSync: (p: string) => {
-      const prefix = p.endsWith("/") ? p : p + "/";
+      const prefix = norm(p.endsWith("/") || p.endsWith("\\") ? p : p + "/");
       const entries = new Set<string>();
       for (const k of store.keys()) {
         if (k.startsWith(prefix)) {
@@ -89,7 +112,7 @@ vi.mock("node:fs", async (importOriginal) => {
       return [...entries].sort();
     },
     unlinkSync: vi.fn((p: string) => {
-      store.delete(p);
+      store.delete(norm(p));
     }),
   };
 });

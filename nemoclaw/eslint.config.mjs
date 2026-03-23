@@ -9,7 +9,11 @@ export default [
       parser: tsparser,
       parserOptions: {
         projectService: {
-          allowDefaultProject: ["src/*.test.ts", "src/*/*.test.ts"],
+          allowDefaultProject: [
+            "src/*.test.ts",
+            "src/*/*.test.ts",
+          ],
+          maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 30,
         },
         tsconfigRootDir: import.meta.dirname,
       },
@@ -30,12 +34,17 @@ export default [
     },
   },
   {
-    files: ["src/**/*.test.ts"],
+    files: ["src/**/*.test.ts", "src/__test-helpers__/**/*.ts"],
     rules: {
       "@typescript-eslint/no-unsafe-assignment": "off",
       "@typescript-eslint/no-unsafe-member-access": "off",
       "@typescript-eslint/no-unsafe-return": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
       "@typescript-eslint/unbound-method": "off",
+      "@typescript-eslint/no-require-imports": "off",
+      "@typescript-eslint/no-non-null-assertion": "off",
+      "@typescript-eslint/require-await": "off",
     },
   },
   prettier,

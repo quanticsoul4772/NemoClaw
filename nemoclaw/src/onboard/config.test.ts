@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { join } from "node:path";
 import {
   describeOnboardEndpoint,
   describeOnboardProvider,
@@ -16,22 +17,27 @@ import {
 // The config module uses: existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync.
 const store = new Map<string, string>();
 
+/** Normalize to forward slashes so the store works on Windows + Unix. */
+function norm(p: string): string {
+  return p.replace(/\\/g, "/");
+}
+
 vi.mock("node:fs", async (importOriginal) => {
   const original = await importOriginal();
   return {
     ...original,
-    existsSync: (p: string) => store.has(p),
+    existsSync: (p: string) => store.has(norm(p)),
     mkdirSync: vi.fn(),
     readFileSync: (p: string) => {
-      const content = store.get(p);
+      const content = store.get(norm(p));
       if (content === undefined) throw new Error(`ENOENT: ${p}`);
       return content;
     },
     writeFileSync: (p: string, data: string) => {
-      store.set(p, data);
+      store.set(norm(p), data);
     },
     unlinkSync: (p: string) => {
-      store.delete(p);
+      store.delete(norm(p));
     },
   };
 });
@@ -111,7 +117,7 @@ describe("onboard/config", () => {
 
     it("returns parsed config when file exists", () => {
       const config = makeConfig();
-      const configPath = `${process.env.HOME ?? "/tmp"}/.nemoclaw/config.json`;
+      const configPath = norm(join(process.env.HOME ?? "/tmp", ".nemoclaw", "config.json"));
       store.set(configPath, JSON.stringify(config));
       expect(loadOnboardConfig()).toEqual(config);
     });
