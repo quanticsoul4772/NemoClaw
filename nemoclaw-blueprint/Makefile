@@ -10,7 +10,7 @@ format:
 check:
 	ruff check .
 	ruff format --check .
-	uv run --with pyright pyright .
+	uv run --with pyright pyright
 
 test:
 	python -m pytest tests/ -v
