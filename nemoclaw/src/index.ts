@@ -97,6 +97,19 @@ export interface ProviderPlugin {
   auth: ProviderAuthMethod[];
 }
 
+/**
+ * Context passed to CLI registration (program + logger from host).
+ *
+ * The `program` field mirrors the commander.Command interface used by the
+ * OpenClaw host. We define it structurally to avoid a build-time dependency
+ * on commander in this declaration file.
+ */
+export interface PluginCliContext {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  program: any;
+  logger: PluginLogger;
+}
+
 /** Background service registration. */
 export interface PluginService {
   id: string;
