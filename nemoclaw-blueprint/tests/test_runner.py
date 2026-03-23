@@ -7,7 +7,6 @@
 import json
 import os
 import sys
-import tempfile
 from pathlib import Path
 from unittest import mock
 
@@ -27,7 +26,6 @@ from orchestrator.runner import (
     progress,
     run_cmd,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -186,9 +184,7 @@ class TestActionPlan:
 
     def test_plan_endpoint_override(self, tmp_home, capsys):
         with mock.patch("orchestrator.runner.openshell_available", return_value=True):
-            plan = action_plan(
-                "default", SAMPLE_BLUEPRINT, endpoint_url="http://custom:9000/v1"
-            )
+            plan = action_plan("default", SAMPLE_BLUEPRINT, endpoint_url="http://custom:9000/v1")
         assert plan["inference"]["endpoint"] == "http://custom:9000/v1"
 
     def test_plan_invalid_profile_exits(self, tmp_home):
