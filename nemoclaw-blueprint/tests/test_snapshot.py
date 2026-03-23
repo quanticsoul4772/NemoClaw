@@ -5,7 +5,6 @@
 """Tests for the snapshot/restore migration module."""
 
 import json
-import os
 import sys
 from pathlib import Path
 from unittest import mock
@@ -29,21 +28,23 @@ def tmp_home(tmp_path):
     nemoclaw_dir = tmp_path / ".nemoclaw"
     snapshots_dir = nemoclaw_dir / "snapshots"
 
-    with mock.patch("migrations.snapshot.HOME", tmp_path), \
-         mock.patch("migrations.snapshot.OPENCLAW_DIR", openclaw_dir), \
-         mock.patch("migrations.snapshot.NEMOCLAW_DIR", nemoclaw_dir), \
-         mock.patch("migrations.snapshot.SNAPSHOTS_DIR", snapshots_dir):
+    with (
+        mock.patch("migrations.snapshot.HOME", tmp_path),
+        mock.patch("migrations.snapshot.OPENCLAW_DIR", openclaw_dir),
+        mock.patch("migrations.snapshot.NEMOCLAW_DIR", nemoclaw_dir),
+        mock.patch("migrations.snapshot.SNAPSHOTS_DIR", snapshots_dir),
+    ):
         yield tmp_path, openclaw_dir, nemoclaw_dir, snapshots_dir
 
 
 class TestCreateSnapshot:
     def test_returns_none_when_no_openclaw_dir(self, tmp_home):
-        _, openclaw_dir, _, _ = tmp_home
+        _, _openclaw_dir, _, _ = tmp_home
         # .openclaw doesn't exist
         assert create_snapshot() is None
 
     def test_creates_snapshot_with_manifest(self, tmp_home):
-        _, openclaw_dir, _, snapshots_dir = tmp_home
+        _, openclaw_dir, _, _snapshots_dir = tmp_home
 
         # Set up a fake .openclaw directory
         openclaw_dir.mkdir(parents=True)
