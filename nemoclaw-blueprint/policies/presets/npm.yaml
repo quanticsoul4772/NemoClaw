@@ -15,3 +15,10 @@ network_policies:
       - host: registry.yarnpkg.com
         port: 443
         access: full
+    binaries:
+      - { path: /usr/local/bin/npm* }
+      - { path: /usr/local/bin/npx* }
+      - { path: /usr/local/bin/node* }
+      - { path: /usr/local/bin/yarn* }
+      - { path: /usr/bin/npm* }
+      - { path: /usr/bin/node* }

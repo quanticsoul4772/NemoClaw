@@ -1,24 +1,38 @@
-# CODEOWNERS - Code Ownership and Review Requirements
-# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+# .github/CODEOWNERS
+#
+# Auto-assigns reviewers to PRs. Each line maps a path pattern to one or more
+# GitHub teams. Last matching pattern wins. GitHub round-robins review requests
+# within each team to spread the load.
+#
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
-# Default: fork maintainer owns everything
-* @quanticsoul4772
+# ── Fallback: maintainers review anything not matched below ──
+*                                   @NVIDIA/nemoclaw-maintainer
 
-# TypeScript Plugin
-/nemoclaw/ @quanticsoul4772
-/nemoclaw/src/ @quanticsoul4772
+# ── CLI plugin (Node/TS) ──
+/nemoclaw/                          @NVIDIA/nemoclaw-maintainer
+/nemoclaw/src/onboard/              @NVIDIA/nemoclaw-engineer
 
-# Python Blueprint
-/nemoclaw-blueprint/ @quanticsoul4772
+# ── Blueprint & sandbox policy (Python) ──
+/nemoclaw-blueprint/                @NVIDIA/nemoclaw-maintainer
+/nemoclaw-blueprint/policies/       @NVIDIA/nemoclaw-security
 
-# Security-sensitive files
-/SECURITY.md @quanticsoul4772
-/.secrets.baseline @quanticsoul4772
-/nemoclaw-blueprint/policies/ @quanticsoul4772
+# ── Shell scripts & installers ──
+/bin/                               @NVIDIA/nemoclaw-maintainer
+/scripts/                           @NVIDIA/nemoclaw-maintainer
+/install.sh                         @NVIDIA/nemoclaw-maintainer
+/uninstall.sh                       @NVIDIA/nemoclaw-maintainer
 
-# CI/CD
-/.github/ @quanticsoul4772
-/Dockerfile @quanticsoul4772
+# ── Container ──
+/Dockerfile                         @NVIDIA/nemoclaw-security @NVIDIA/nemoclaw-maintainer
 
-# This file itself
-/.github/CODEOWNERS @quanticsoul4772
+# ── Docs ──
+/docs/                              @NVIDIA/nemoclaw-engineer
+/spark-install.md                   @NVIDIA/nemoclaw-engineer
+
+# ── Tests ──
+/test/                              @NVIDIA/nemoclaw-engineer
+
+# ── CI / GitHub config ──
+/.github/                           @NVIDIA/nemoclaw-maintainer
+/ci/                                @NVIDIA/nemoclaw-maintainer

@@ -11,10 +11,27 @@ network_policies:
     endpoints:
       - host: huggingface.co
         port: 443
-        access: full
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: GET, path: "/**" }
+          - allow: { method: POST, path: "/**" }
       - host: cdn-lfs.huggingface.co
         port: 443
-        access: full
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: GET, path: "/**" }
       - host: api-inference.huggingface.co
         port: 443
-        access: full
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: GET, path: "/**" }
+          - allow: { method: POST, path: "/**" }
+    binaries:
+      - { path: /usr/local/bin/python3 }
+      - { path: /usr/local/bin/node }
