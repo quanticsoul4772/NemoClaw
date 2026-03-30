@@ -534,8 +534,9 @@ function isOpenclawReady(sandboxName) {
   return Boolean(fetchGatewayAuthTokenFromSandbox(sandboxName));
 }
 
-function writeSandboxConfigSyncFile(script, tmpDir = os.tmpdir(), now = Date.now()) {
-  const scriptFile = path.join(tmpDir, `nemoclaw-sync-${now}.sh`);
+function writeSandboxConfigSyncFile(script, tmpDir = os.tmpdir()) {
+  const dir = fs.mkdtempSync(path.join(tmpDir, "nemoclaw-sync-"));
+  const scriptFile = path.join(dir, "sync.sh");
   fs.writeFileSync(scriptFile, `${script}\n`, { mode: 0o600 });
   return scriptFile;
 }
@@ -674,7 +675,8 @@ function probeOpenAiLikeEndpoint(endpointUrl, model, apiKey) {
 
   const failures = [];
   for (const probe of probes) {
-    const bodyFile = path.join(os.tmpdir(), `nemoclaw-probe-${Date.now()}-${Math.random().toString(36).slice(2)}.json`);
+    const probeDir = fs.mkdtempSync(path.join(os.tmpdir(), "nemoclaw-probe-"));
+    const bodyFile = path.join(probeDir, "body.json");
     try {
       const cmd = [
         "curl -sS",
@@ -706,7 +708,7 @@ function probeOpenAiLikeEndpoint(endpointUrl, model, apiKey) {
         message: summarizeProbeError(body, status || result.status || 0),
       });
     } finally {
-      fs.rmSync(bodyFile, { force: true });
+      fs.rmSync(probeDir, { recursive: true, force: true });
     }
   }
 
@@ -718,7 +720,8 @@ function probeOpenAiLikeEndpoint(endpointUrl, model, apiKey) {
 }
 
 function probeAnthropicEndpoint(endpointUrl, model, apiKey) {
-  const bodyFile = path.join(os.tmpdir(), `nemoclaw-anthropic-probe-${Date.now()}-${Math.random().toString(36).slice(2)}.json`);
+  const probeDir = fs.mkdtempSync(path.join(os.tmpdir(), "nemoclaw-anthropic-probe-"));
+  const bodyFile = path.join(probeDir, "body.json");
   try {
     const cmd = [
       "curl -sS",
@@ -760,7 +763,7 @@ function probeAnthropicEndpoint(endpointUrl, model, apiKey) {
       ],
     };
   } finally {
-    fs.rmSync(bodyFile, { force: true });
+    fs.rmSync(probeDir, { recursive: true, force: true });
   }
 }
 
@@ -864,7 +867,8 @@ async function validateCustomAnthropicSelection(label, endpointUrl, model, crede
 }
 
 function fetchNvidiaEndpointModels(apiKey) {
-  const bodyFile = path.join(os.tmpdir(), `nemoclaw-nvidia-models-${Date.now()}-${Math.random().toString(36).slice(2)}.json`);
+  const probeDir = fs.mkdtempSync(path.join(os.tmpdir(), "nemoclaw-nvidia-models-"));
+  const bodyFile = path.join(probeDir, "body.json");
   try {
     const cmd = [
       "curl -sS",
@@ -896,7 +900,7 @@ function fetchNvidiaEndpointModels(apiKey) {
   } catch (error) {
     return { ok: false, message: error.message || String(error) };
   } finally {
-    fs.rmSync(bodyFile, { force: true });
+    fs.rmSync(probeDir, { recursive: true, force: true });
   }
 }
 
@@ -918,7 +922,8 @@ function validateNvidiaEndpointModel(model, apiKey) {
 }
 
 function fetchOpenAiLikeModels(endpointUrl, apiKey) {
-  const bodyFile = path.join(os.tmpdir(), `nemoclaw-openai-models-${Date.now()}-${Math.random().toString(36).slice(2)}.json`);
+  const probeDir = fs.mkdtempSync(path.join(os.tmpdir(), "nemoclaw-openai-models-"));
+  const bodyFile = path.join(probeDir, "body.json");
   try {
     const cmd = [
       "curl -sS",
@@ -949,12 +954,13 @@ function fetchOpenAiLikeModels(endpointUrl, apiKey) {
   } catch (error) {
     return { ok: false, status: 0, message: error.message || String(error) };
   } finally {
-    fs.rmSync(bodyFile, { force: true });
+    fs.rmSync(probeDir, { recursive: true, force: true });
   }
 }
 
 function fetchAnthropicModels(endpointUrl, apiKey) {
-  const bodyFile = path.join(os.tmpdir(), `nemoclaw-anthropic-models-${Date.now()}-${Math.random().toString(36).slice(2)}.json`);
+  const probeDir = fs.mkdtempSync(path.join(os.tmpdir(), "nemoclaw-anthropic-models-"));
+  const bodyFile = path.join(probeDir, "body.json");
   try {
     const cmd = [
       "curl -sS",
@@ -986,7 +992,7 @@ function fetchAnthropicModels(endpointUrl, apiKey) {
   } catch (error) {
     return { ok: false, status: 0, message: error.message || String(error) };
   } finally {
-    fs.rmSync(bodyFile, { force: true });
+    fs.rmSync(probeDir, { recursive: true, force: true });
   }
 }
 
@@ -2378,7 +2384,7 @@ async function setupOpenclaw(sandboxName, model, provider) {
         { stdio: ["ignore", "ignore", "inherit"] }
       );
     } finally {
-      fs.unlinkSync(scriptFile);
+      fs.rmSync(path.dirname(scriptFile), { recursive: true, force: true });
     }
   }
 
