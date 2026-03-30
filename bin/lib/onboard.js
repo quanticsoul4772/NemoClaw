@@ -168,13 +168,24 @@ async function promptOrDefault(question, envVar, defaultValue) {
  * Check if a sandbox is in Ready state from `openshell sandbox list` output.
  * Strips ANSI codes and exact-matches the sandbox name in the first column.
  */
-function isSandboxReady(output, sandboxName) {
+function parseSandboxRow(output, sandboxName) {
+  if (!output || typeof output !== "string") return null;
   // eslint-disable-next-line no-control-regex
   const clean = output.replace(/\x1b\[[0-9;]*m/g, "");
-  return clean.split("\n").some((l) => {
-    const cols = l.trim().split(/\s+/);
-    return cols[0] === sandboxName && cols.includes("Ready") && !cols.includes("NotReady");
-  });
+  for (const line of clean.split("\n")) {
+    const cols = line.trim().split(/\s+/);
+    if (cols[0] === sandboxName) return cols;
+  }
+  return null;
+}
+
+function parseSandboxStatus(output, sandboxName) {
+  const cols = parseSandboxRow(output, sandboxName);
+  return cols && cols.length >= 2 ? cols[1] : null;
+}
+
+function isSandboxReady(output, sandboxName) {
+  return parseSandboxStatus(output, sandboxName) === "Ready";
 }
 
 /**
@@ -3059,6 +3070,7 @@ module.exports = {
   getSandboxReuseState,
   getSandboxStateFromOutputs,
   isSandboxReady,
+  parseSandboxStatus,
   onboard,
   onboardSession,
   printSandboxCreateRecoveryHints,
