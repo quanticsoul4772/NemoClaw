@@ -83,8 +83,8 @@ The following endpoint groups are allowed by default:
 
 * - `npm_registry`
   - `registry.npmjs.org:443`, `registry.yarnpkg.com:443`
-  - `/usr/local/bin/openclaw`, `/usr/local/bin/npm`
-  - All (full access)
+  - `/usr/local/bin/openclaw`, `/usr/local/bin/npm`, `/usr/local/bin/node`
+  - All methods, all paths
 
 * - `telegram`
   - `api.telegram.org:443`
