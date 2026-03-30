@@ -106,6 +106,13 @@ os.chmod(path, 0o600)
 PYAUTH
 }
 
+harden_auth_profiles() {
+  if [ -d "${HOME}/.openclaw" ]; then
+    # Enforce 600 for all auth profiles across all agents
+    find -L "${HOME}/.openclaw" -type f -name "auth-profiles.json" -exec chmod 600 {} + 2>/dev/null || true
+  fi
+}
+
 print_dashboard_urls() {
   local token chat_ui_base local_url remote_url
 
@@ -298,6 +305,7 @@ if [ "$(id -u)" -ne 0 ]; then
     echo "[SECURITY WARNING] Config integrity check failed — proceeding anyway (non-root mode)"
   fi
   write_auth_profile
+  harden_auth_profiles
 
   if [ ${#NEMOCLAW_CMD[@]} -gt 0 ]; then
     exec "${NEMOCLAW_CMD[@]}"
@@ -328,7 +336,7 @@ fi
 verify_config_integrity
 
 # Write auth profile as sandbox user (needs writable .openclaw-data)
-gosu sandbox bash -c "$(declare -f write_auth_profile); write_auth_profile"
+gosu sandbox bash -c "$(declare -f write_auth_profile harden_auth_profiles); write_auth_profile; harden_auth_profiles"
 
 # If a command was passed (e.g., "openclaw agent ..."), run it as sandbox user
 if [ ${#NEMOCLAW_CMD[@]} -gt 0 ]; then
