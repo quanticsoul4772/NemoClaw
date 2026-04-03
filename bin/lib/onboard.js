@@ -1972,8 +1972,13 @@ async function createSandbox(gpu, model, provider, preferredInferenceApi = null,
   // A previous onboard run may have left the port forwarded to a different sandbox,
   // which would silently prevent the new sandbox's dashboard from being reachable.
   runOpenshell(["forward", "stop", "18789"], { ignoreError: true });
-  // Forward dashboard port to the new sandbox
-  runOpenshell(["forward", "start", "--background", "18789", sandboxName], { ignoreError: true });
+  // Forward dashboard port to the new sandbox.
+  // Use stdio "ignore" to prevent spawnSync from blocking on inherited pipe fds —
+  // the --background flag forks a child that never exits, so pipes never close.
+  runOpenshell(["forward", "start", "--background", "18789", sandboxName], {
+    ignoreError: true,
+    stdio: ["ignore", "ignore", "ignore"],
+  });
 
   // Register only after confirmed ready — prevents phantom entries
   registry.registerSandbox({
