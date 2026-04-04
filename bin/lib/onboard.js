@@ -1671,7 +1671,11 @@ async function startGatewayWithOptions(_gpu, { exitOnFailure = true } = {}) {
   }
 
   if (hasStaleGateway(gwInfo)) {
-    runOpenshell(["gateway", "destroy", "-g", GATEWAY_NAME], { ignoreError: true });
+    // When a stale gateway is detected (metadata exists but container is gone,
+    // e.g. after a Docker/Colima restart), skip the destroy — `gateway start`
+    // can recover the container without wiping metadata and mTLS certs.
+    // The retry loop below will destroy only if start genuinely fails.
+    console.log("  Stale gateway detected — attempting restart without destroy...");
   }
 
   const gwArgs = ["--name", GATEWAY_NAME];
