@@ -21,3 +21,8 @@ network_policies:
       - host: objects.githubusercontent.com
         port: 443
         access: full
+    binaries:
+      - { path: /usr/bin/git }
+      - { path: /usr/bin/gh }
+      - { path: /usr/local/bin/git }
+      - { path: /usr/local/bin/gh }
