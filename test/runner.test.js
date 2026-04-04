@@ -53,8 +53,8 @@ describe("runner helpers", () => {
     }
 
     expect(calls).toHaveLength(2);
-    expect(calls[0][2].stdio).toEqual(["ignore", "inherit", "inherit"]);
-    expect(calls[1][2].stdio).toBe("inherit");
+    expect(calls[0][2].stdio).toEqual(["ignore", "pipe", "pipe"]);
+    expect(calls[1][2].stdio).toEqual(["inherit", "pipe", "pipe"]);
   });
 });
 
