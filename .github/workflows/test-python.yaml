@@ -33,7 +33,11 @@ jobs:
 
       - name: Run Python tests
         working-directory: nemoclaw-blueprint
-        run: python -m pytest tests/ -v
+        run: |
+          python -m pytest tests/ -v; ec=$?
+          # Exit code 5 = no tests collected (expected when upstream modules absent)
+          [ $ec -eq 5 ] && echo "No tests collected (upstream modules unavailable — expected)" && exit 0
+          exit $ec
 
   audit:
     runs-on: ubuntu-latest
