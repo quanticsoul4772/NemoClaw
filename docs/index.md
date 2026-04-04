@@ -267,3 +267,21 @@ Troubleshooting <reference/troubleshooting>
 resources/license
 Discord <https://discord.gg/XFpfPv9Uvx>
 ```
+```{toctree}
+:caption: Additional Guides
+:hidden:
+
+Deployment Overview <deployment>
+Autonomous Agents <autonomous-agents>
+Code Quality <code-quality>
+Observability <observability>
+Feature Flags <feature-flags>
+Product Analytics <product-analytics>
+Release History <releases>
+Runbooks <runbooks>
+Error to Insight Pipeline <error-to-insight-pipeline>
+Testing Guide <testing>
+Streaming Errors <troubleshooting/streaming-errors>
+Architecture Deep Dive <architecture/README>
+```
+
