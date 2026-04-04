@@ -85,7 +85,7 @@ This directory contains architecture diagrams and documentation for the NemoClaw
 Mermaid diagrams render automatically in GitHub markdown. Simply view the `.mermaid` files or include them in markdown:
 
 \`\`\`markdown
-```mermaid
+```text
 graph TB
     ...
 ```
@@ -106,7 +106,7 @@ Include diagrams in markdown docs:
 \`\`\`markdown
 # Architecture
 
-```mermaid
+```text
 graph TB
     CLI[CLI] --> Plugin[Plugin]
 ```
