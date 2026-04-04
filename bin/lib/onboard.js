@@ -2307,16 +2307,24 @@ async function setupNim(gpu) {
           console.log("");
           continue;
         }
-        preferredInferenceApi = await validateOpenAiLikeSelection(
+        const ollamaApi = await validateOpenAiLikeSelection(
           "Local Ollama",
           getLocalProviderValidationBaseUrl(provider),
           model,
           null,
           "Choose a different Ollama model or select Other."
         );
-        if (!preferredInferenceApi) {
+        if (!ollamaApi) {
           continue;
         }
+        // Ollama's /v1/responses endpoint does not produce correctly
+        // formatted tool calls — force chat completions like vLLM/NIM.
+        if (ollamaApi !== "openai-completions") {
+          console.log(
+            "  ℹ Using chat completions API (Ollama tool calls require /v1/chat/completions)",
+          );
+        }
+        preferredInferenceApi = "openai-completions";
         break;
       }
       break;
@@ -2347,16 +2355,24 @@ async function setupNim(gpu) {
           console.log("");
           continue;
         }
-        preferredInferenceApi = await validateOpenAiLikeSelection(
+        const installOllamaApi = await validateOpenAiLikeSelection(
           "Local Ollama",
           getLocalProviderValidationBaseUrl(provider),
           model,
           null,
           "Choose a different Ollama model or select Other."
         );
-        if (!preferredInferenceApi) {
+        if (!installOllamaApi) {
           continue;
         }
+        // Ollama's /v1/responses endpoint does not produce correctly
+        // formatted tool calls — force chat completions like vLLM/NIM.
+        if (installOllamaApi !== "openai-completions") {
+          console.log(
+            "  ℹ Using chat completions API (Ollama tool calls require /v1/chat/completions)",
+          );
+        }
+        preferredInferenceApi = "openai-completions";
         break;
       }
       break;
