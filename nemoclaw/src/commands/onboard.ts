@@ -52,6 +52,8 @@ function resolveProfile(endpointType: EndpointType): string {
       return "vllm";
     case "ollama":
       return "ollama";
+    default:
+      throw new Error(`Unhandled endpoint type: ${endpointType as string}`);
   }
 }
 
@@ -68,6 +70,8 @@ function resolveProviderName(endpointType: EndpointType): string {
       return "vllm-local";
     case "ollama":
       return "ollama-local";
+    default:
+      throw new Error(`Unhandled endpoint type: ${endpointType as string}`);
   }
 }
 
@@ -82,6 +86,8 @@ function resolveCredentialEnv(endpointType: EndpointType): string {
     case "vllm":
     case "ollama":
       return "OPENAI_API_KEY";
+    default:
+      throw new Error(`Unhandled endpoint type: ${endpointType as string}`);
   }
 }
 
@@ -256,6 +262,8 @@ export async function cliOnboard(opts: OnboardOptions): Promise<void> {
     case "custom":
       endpointUrl = opts.endpointUrl ?? (await promptInput("Custom endpoint URL"));
       break;
+    default:
+      throw new Error(`Unhandled endpoint type: ${endpointType as string}`);
   }
 
   if (!endpointUrl) {
