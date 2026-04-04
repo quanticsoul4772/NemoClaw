@@ -6,7 +6,7 @@ NemoClaw has fully automated release pipelines that handle Docker image publishi
 
 When you create a GitHub Release, the following automation runs automatically:
 
-```mermaid
+```text
 graph LR
     A[Push Tag v*.*.* ] --> B[Generate Release Notes]
     B --> C[Create GitHub Release]
