@@ -1,0 +1,31 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude Code Review
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          review_comment_prefix: "claude"
+          direct_prompt: |
+            Review this PR for:
+            - Security issues (command injection, path traversal, credential exposure)
+            - Policy consistency (network policies should use access: full for streaming endpoints)
+            - Code quality and correctness
+            - Test coverage for new functionality
+            Be concise. Only comment on issues that matter.
