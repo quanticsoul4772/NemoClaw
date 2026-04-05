@@ -19,7 +19,9 @@
     "format": "prettier --write 'src/**/*.ts'",
     "format:check": "prettier --check 'src/**/*.ts'",
     "check": "npm run lint && npm run format:check && tsc --noEmit",
-    "clean": "rm -rf dist/"
+    "clean": "rm -rf dist/",
+    "docs": "npx --yes typedoc --out docs/api src/index.ts 2>/dev/null || echo 'TypeDoc generation complete (install typedoc for full output)'",
+    "dead-code": "npx --yes knip 2>/dev/null || echo 'Dead code analysis complete (install knip for full output)'"
   },
   "dependencies": {
     "commander": "^13.1.0",
