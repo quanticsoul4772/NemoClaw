@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "nemoclaw-blueprint"
+version = "0.1.0"
+description = "NemoClaw blueprint orchestration for OpenShell sandbox management"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.11"
+dependencies = [
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+docs = [
+    "sphinx>=7.0",
+    "myst-parser>=2.0",
+    "sphinx-autodoc-typehints>=1.24",
+]
+dev = [
+    "ruff>=0.4.0",
+    "pytest>=8.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "S", "C90"]
+ignore = ["S101"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+[tool.ruff.lint.pep8-naming]
+convention = "pep8"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
