@@ -34,6 +34,6 @@ jobs:
             exit 0
           fi
 
-          echo "$UPSTREAM_NEW new commit(s) from upstream. Merging (prefer upstream on conflicts)..."
-          git merge upstream/main --no-ff -X theirs -m "chore: sync upstream NVIDIA/NemoClaw"
-          git push origin main
+          echo "$UPSTREAM_NEW new commit(s) from upstream. Resetting to upstream..."
+          git reset --hard upstream/main
+          git push origin main --force
