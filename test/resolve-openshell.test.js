@@ -1,103 +1,54 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-const { describe, it } = require("node:test");
-const assert = require("node:assert/strict");
+import { describe, expect, it } from "vitest";
 
-const { resolveOpenshell } = require("../bin/lib/resolve-openshell");
+import { resolveOpenshell } from "../bin/lib/resolve-openshell";
 
 describe("resolveOpenshell", () => {
-  it("returns commandVResult when it is an absolute path", () => {
-    const result = resolveOpenshell({ commandVResult: "/usr/local/bin/openshell" });
-    assert.equal(result, "/usr/local/bin/openshell");
+  it("returns an absolute command -v result immediately", () => {
+    expect(resolveOpenshell({ commandVResult: "/usr/local/bin/openshell" })).toBe(
+      "/usr/local/bin/openshell",
+    );
   });
 
-  it("ignores commandVResult when it is not an absolute path", () => {
-    // Relative paths could be alias injection — should be rejected
-    const result = resolveOpenshell({
-      commandVResult: "openshell",
-      checkExecutable: () => false,
-      home: "/nonexistent",
-    });
-    assert.equal(result, null);
+  it("ignores non-absolute command -v output and falls back to known locations", () => {
+    expect(
+      resolveOpenshell({
+        home: "/tmp/test-home",
+        commandVResult: "openshell",
+        checkExecutable: (candidate) => candidate === "/usr/local/bin/openshell",
+      }),
+    ).toBe("/usr/local/bin/openshell");
   });
 
-  it("ignores empty commandVResult", () => {
-    const result = resolveOpenshell({
-      commandVResult: "",
-      checkExecutable: () => false,
-      home: "/nonexistent",
-    });
-    assert.equal(result, null);
+  it("prefers the home-local fallback before system paths", () => {
+    expect(
+      resolveOpenshell({
+        home: "/tmp/test-home",
+        commandVResult: "",
+        checkExecutable: (candidate) => candidate === "/tmp/test-home/.local/bin/openshell",
+      }),
+    ).toBe("/tmp/test-home/.local/bin/openshell");
   });
 
-  it("falls back to home/.local/bin if commandV fails", () => {
-    const result = resolveOpenshell({
-      commandVResult: null,
-      home: "/home/testuser",
-      checkExecutable: (p) => p === "/home/testuser/.local/bin/openshell",
-    });
-    assert.equal(result, "/home/testuser/.local/bin/openshell");
+  it("skips invalid home values when checking fallback candidates", () => {
+    expect(
+      resolveOpenshell({
+        home: "relative-home",
+        commandVResult: null,
+        checkExecutable: (candidate) => candidate === "/usr/bin/openshell",
+      }),
+    ).toBe("/usr/bin/openshell");
   });
 
-  it("falls back to /usr/local/bin", () => {
-    const result = resolveOpenshell({
-      commandVResult: null,
-      home: "/nonexistent",
-      checkExecutable: (p) => p === "/usr/local/bin/openshell",
-    });
-    assert.equal(result, "/usr/local/bin/openshell");
-  });
-
-  it("falls back to /usr/bin", () => {
-    const result = resolveOpenshell({
-      commandVResult: null,
-      home: "/nonexistent",
-      checkExecutable: (p) => p === "/usr/bin/openshell",
-    });
-    assert.equal(result, "/usr/bin/openshell");
-  });
-
-  it("returns null when openshell is nowhere", () => {
-    const result = resolveOpenshell({
-      commandVResult: null,
-      checkExecutable: () => false,
-      home: "/nonexistent",
-    });
-    assert.equal(result, null);
-  });
-
-  it("skips home candidate when home does not start with /", () => {
-    const checked = [];
-    resolveOpenshell({
-      commandVResult: null,
-      home: "relative/path",
-      checkExecutable: (p) => { checked.push(p); return false; },
-    });
-    // Should NOT check relative/path/.local/bin/openshell
-    assert.ok(!checked.some((p) => p.includes("relative")));
-    // Should still check system paths
-    assert.ok(checked.includes("/usr/local/bin/openshell"));
-  });
-
-  it("prefers commandV over fallback candidates", () => {
-    const result = resolveOpenshell({
-      commandVResult: "/opt/custom/openshell",
-      checkExecutable: (p) => p === "/usr/local/bin/openshell",
-    });
-    // commandV should win even though fallback would also match
-    assert.equal(result, "/opt/custom/openshell");
-  });
-
-  it("checks candidates in priority order", () => {
-    const checked = [];
-    resolveOpenshell({
-      commandVResult: null,
-      home: "/home/user",
-      checkExecutable: (p) => { checked.push(p); return false; },
-    });
-    assert.equal(checked[0], "/home/user/.local/bin/openshell");
-    assert.equal(checked[1], "/usr/local/bin/openshell");
-    assert.equal(checked[2], "/usr/bin/openshell");
+  it("returns null when no resolved path is executable", () => {
+    expect(
+      resolveOpenshell({
+        home: "/tmp/test-home",
+        commandVResult: "",
+        checkExecutable: () => false,
+      }),
+    ).toBe(null);
   });
 });

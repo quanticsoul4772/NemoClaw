@@ -1,71 +1,12 @@
-# Dependencies (rebuilt inside image)
 node_modules
-**/node_modules
-
-# Build output (copied explicitly)
 /dist
-nemoclaw/dist
-
-# Version control
 .git
-.gitignore
-
-# CI/CD and GitHub
-.github/
-.coderabbit.yaml
-
-# Documentation (not needed in sandbox image)
-docs/
-*.md
-!nemoclaw-blueprint/**/*.md
-
-# IDE and editor files
-.vscode/
-.idea/
-.editorconfig
-*.swp
-*.swo
-*~
-
-# Test files
-test/
-**/*.test.js
-**/*.test.ts
-**/*.spec.js
-**/*.spec.ts
-coverage/
-.nyc_output/
-.pytest_cache/
-
-# Python bytecode
 *.pyc
 __pycache__
-
-# Python dev artifacts
 .pytest_cache
 .venv
 .ruff_cache
 .mypy_cache
-*.egg-info
-
-# TypeScript source (dist/ is copied instead)
-nemoclaw/src/
-nemoclaw/tsconfig.json
-nemoclaw/vitest.config.ts
-nemoclaw/eslint.config.mjs
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Environment and secrets
 .env
-.env.*
-.secrets.baseline
-*.log
-
-# Dev config
-.husky/
-commitlint.config.js
-.nvmrc
-.python-version
+*.egg-info
+.DS_Store

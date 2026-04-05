@@ -26,7 +26,12 @@ extensions = [
     "sphinxcontrib.mermaid",
     "json_output",
     "search_assets",
+    "sphinx_reredirects",
 ]
+
+redirects = {
+    "reference/inference-profiles": "../inference/inference-options.html",
+}
 
 autodoc_default_options = {
     "members": True,
@@ -47,13 +52,7 @@ exclude_patterns = [
     "_ext/**",
 ]
 
-suppress_warnings = [
-    "myst.header",
-    "toctree",                    # docs not referenced in any toctree (upstream structure incomplete in fork)
-    "ref.doc",                    # cross-references to ../AGENTS, ../README outside docs/ dir
-    "myst.xref_missing",          # MyST cross-references to missing files (./env-variables.md, ../runbooks.md)
-    "misc.highlighting_failure",  # mermaid/promql/sql Pygments lexer errors
-]
+suppress_warnings = ["myst.header"]
 
 myst_linkify_fuzzy_links = False
 myst_heading_anchors = 4
@@ -101,6 +100,10 @@ highlight_language = "console"
 
 html_theme_options = {
     # "public_docs_features": True, # TODO: Uncomment this when the docs are public
+    "announcement": (
+        "&#x1F514; NVIDIA NemoClaw is <strong>alpha software</strong>. APIs and behavior"
+        " may change without notice. Do not use in production."
+    ),
     "icon_links": [
         {
             "name": "NemoClaw GitHub",

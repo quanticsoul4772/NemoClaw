@@ -14,6 +14,69 @@ if (dockerHost) {
 }
 
 /**
+ * Run a shell command via bash, streaming stdout/stderr (redacted) to the terminal.
+ * Exits the process on failure unless opts.ignoreError is true.
+ */
+function run(cmd, opts = {}) {
+  const stdio = opts.stdio ?? ["ignore", "pipe", "pipe"];
+  const result = spawnSync("bash", ["-c", cmd], {
+    ...opts,
+    stdio,
+    cwd: ROOT,
+    env: { ...process.env, ...opts.env },
+  });
+  if (!opts.suppressOutput) {
+    writeRedactedResult(result, stdio);
+  }
+  if (result.status !== 0 && !opts.ignoreError) {
+    console.error(`  Command failed (exit ${result.status}): ${redact(cmd).slice(0, 80)}`);
+    process.exit(result.status || 1);
+  }
+  return result;
+}
+
+/**
+ * Run a shell command interactively (stdin inherited) while capturing and redacting stdout/stderr.
+ * Exits the process on failure unless opts.ignoreError is true.
+ */
+function runInteractive(cmd, opts = {}) {
+  const stdio = opts.stdio ?? ["inherit", "pipe", "pipe"];
+  const result = spawnSync("bash", ["-c", cmd], {
+    ...opts,
+    stdio,
+    cwd: ROOT,
+    env: { ...process.env, ...opts.env },
+  });
+  if (!opts.suppressOutput) {
+    writeRedactedResult(result, stdio);
+  }
+  if (result.status !== 0 && !opts.ignoreError) {
+    console.error(`  Command failed (exit ${result.status}): ${redact(cmd).slice(0, 80)}`);
+    process.exit(result.status || 1);
+  }
+  return result;
+}
+
+/**
+ * Run a shell command and return its stdout as a trimmed string.
+ * Throws a redacted error on failure, or returns '' when opts.ignoreError is true.
+ */
+function runCapture(cmd, opts = {}) {
+  try {
+    return execSync(cmd, {
+      ...opts,
+      encoding: "utf-8",
+      cwd: ROOT,
+      env: { ...process.env, ...opts.env },
+      stdio: ["pipe", "pipe", "pipe"],
+    }).trim();
+  } catch (err) {
+    if (opts.ignoreError) return "";
+    throw redactError(err);
+  }
+}
+
+/**
  * Redact known secret patterns from a string to prevent accidental leaks
  * in CLI log and error output. Covers NVIDIA API keys, bearer tokens,
  * generic API key assignments, and base64-style long tokens.
@@ -105,65 +168,6 @@ function writeRedactedResult(result, stdio) {
 }
 
 /**
- * Run a shell command via bash, streaming stdout/stderr (redacted) to the terminal.
- * Exits the process on failure unless opts.ignoreError is true.
- */
-function run(cmd, opts = {}) {
-  const stdio = opts.stdio ?? ["ignore", "pipe", "pipe"];
-  const result = spawnSync("bash", ["-c", cmd], {
-    ...opts,
-    stdio,
-    cwd: ROOT,
-    env: { ...process.env, ...opts.env },
-  });
-  writeRedactedResult(result, stdio);
-  if (result.status !== 0 && !opts.ignoreError) {
-    console.error(`  Command failed (exit ${result.status}): ${redact(cmd).slice(0, 80)}`);
-    process.exit(result.status || 1);
-  }
-  return result;
-}
-
-/**
- * Run a shell command interactively (stdin inherited) while capturing and redacting stdout/stderr.
- * Exits the process on failure unless opts.ignoreError is true.
- */
-function runInteractive(cmd, opts = {}) {
-  const stdio = opts.stdio ?? ["inherit", "pipe", "pipe"];
-  const result = spawnSync("bash", ["-c", cmd], {
-    ...opts,
-    stdio,
-    cwd: ROOT,
-    env: { ...process.env, ...opts.env },
-  });
-  writeRedactedResult(result, stdio);
-  if (result.status !== 0 && !opts.ignoreError) {
-    console.error(`  Command failed (exit ${result.status}): ${redact(cmd).slice(0, 80)}`);
-    process.exit(result.status || 1);
-  }
-  return result;
-}
-
-/**
- * Run a shell command and return its stdout as a trimmed string.
- * Throws a redacted error on failure, or returns '' when opts.ignoreError is true.
- */
-function runCapture(cmd, opts = {}) {
-  try {
-    return execSync(cmd, {
-      ...opts,
-      encoding: "utf-8",
-      cwd: ROOT,
-      env: { ...process.env, ...opts.env },
-      stdio: ["pipe", "pipe", "pipe"],
-    }).trim();
-  } catch (err) {
-    if (opts.ignoreError) return "";
-    throw redactError(err);
-  }
-}
-
-/**
  * Shell-quote a value for safe interpolation into bash -c strings.
  * Wraps in single quotes and escapes embedded single quotes.
  */
@@ -184,7 +188,7 @@ function validateName(name, label = "name") {
   }
   if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(name)) {
     throw new Error(
-      `Invalid ${label}: '${name}'. Must be lowercase alphanumeric with optional internal hyphens.`
+      `Invalid ${label}: '${name}'. Must be lowercase alphanumeric with optional internal hyphens.`,
     );
   }
   return name;
