@@ -27,27 +27,23 @@ jobs:
           git fetch upstream main
           git checkout main
 
-          # Check if upstream has new commits we don't have
+          # Check if upstream has new commits we don't have (outside .github/workflows)
           UPSTREAM_NEW=$(git log HEAD..upstream/main --oneline | wc -l)
           if [ "$UPSTREAM_NEW" -eq 0 ]; then
             echo "No new commits from upstream — fork is up to date or ahead"
             exit 0
           fi
 
-          echo "$UPSTREAM_NEW new commit(s) from upstream. Syncing..."
+          # Generate diff from HEAD to upstream, excluding .github/workflows
+          # (GITHUB_TOKEN cannot push workflow file changes)
+          git diff HEAD upstream/main -- . ':(exclude).github/workflows/**' > /tmp/upstream.patch
 
-          # Save our own workflow files (GITHUB_TOKEN cannot push .github/workflows changes)
-          cp -r .github/workflows /tmp/fork-workflows
+          if [ ! -s /tmp/upstream.patch ]; then
+            echo "$UPSTREAM_NEW upstream commit(s) found, but all changes are in .github/workflows — skipping"
+            exit 0
+          fi
 
-          # Reset to upstream state
-          git reset --hard upstream/main
-
-          # Restore our workflow files so the push doesn't include workflow diffs
-          rm -rf .github/workflows
-          cp -r /tmp/fork-workflows .github/workflows
-
-          # Commit all upstream changes (minus workflow diffs) and push
-          git add -A
-          git diff --staged --quiet && echo "Only workflow changes from upstream — nothing to push" && exit 0
+          echo "$UPSTREAM_NEW new commit(s) from upstream. Applying non-workflow changes..."
+          git apply --index /tmp/upstream.patch
           git commit -m "chore: sync upstream NVIDIA/NemoClaw"
           git push origin main
