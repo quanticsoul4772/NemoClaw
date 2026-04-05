@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: write
-  workflows: write
 
 jobs:
   sync:
@@ -35,6 +34,20 @@ jobs:
             exit 0
           fi
 
-          echo "$UPSTREAM_NEW new commit(s) from upstream. Resetting to upstream..."
+          echo "$UPSTREAM_NEW new commit(s) from upstream. Syncing..."
+
+          # Save our own workflow files (GITHUB_TOKEN cannot push .github/workflows changes)
+          cp -r .github/workflows /tmp/fork-workflows
+
+          # Reset to upstream state
           git reset --hard upstream/main
-          git push origin main --force
+
+          # Restore our workflow files so the push doesn't include workflow diffs
+          rm -rf .github/workflows
+          cp -r /tmp/fork-workflows .github/workflows
+
+          # Commit all upstream changes (minus workflow diffs) and push
+          git add -A
+          git diff --staged --quiet && echo "Only workflow changes from upstream — nothing to push" && exit 0
+          git commit -m "chore: sync upstream NVIDIA/NemoClaw"
+          git push origin main
