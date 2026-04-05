@@ -20,6 +20,9 @@ jobs:
 
       - name: Sync with upstream
         run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
           git remote add upstream https://github.com/NVIDIA/NemoClaw.git || true
           git fetch upstream main
           git checkout main
