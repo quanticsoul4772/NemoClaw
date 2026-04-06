@@ -1732,6 +1732,26 @@ describe("installer runtime checks (sourced)", () => {
     );
   }
 
+  /**
+   * Build a minimal isolated bin dir containing symlinks to the given tools
+   * (sourced from TEST_SYSTEM_PATH) but explicitly excluding node and npm.
+   * Needed on Ubuntu where /bin is a symlink to /usr/bin, so node/npm are
+   * always reachable via TEST_SYSTEM_PATH = "/usr/bin:/bin".
+   */
+  function createIsolatedBin(includeTools) {
+    const isolatedBin = fs.mkdtempSync(path.join(os.tmpdir(), "nemoclaw-isolated-bin-"));
+    for (const tool of includeTools) {
+      for (const dir of TEST_SYSTEM_PATH.split(":")) {
+        const src = path.join(dir, tool);
+        if (fs.existsSync(src)) {
+          fs.symlinkSync(src, path.join(isolatedBin, tool));
+          break;
+        }
+      }
+    }
+    return isolatedBin;
+  }
+
   it("fails with clear message when node is missing entirely", () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "nemoclaw-no-node-"));
     const fakeBin = path.join(tmp, "bin");
@@ -1744,7 +1764,9 @@ describe("installer runtime checks (sourced)", () => {
 echo "10.9.2"`,
     );
 
-    const result = callEnsureSupportedRuntime(fakeBin);
+    // Use isolated bin that excludes node/npm (on Ubuntu /bin == /usr/bin so both are always present)
+    const isolatedBin = createIsolatedBin(["bash", "cut", "grep", "sed", "cat", "ls", "id"]);
+    const result = callEnsureSupportedRuntime(fakeBin, { PATH: `${fakeBin}:${isolatedBin}` });
 
     expect(result.status).not.toBe(0);
     expect(`${result.stdout}${result.stderr}`).toMatch(/Node\.js was not found on PATH/);
@@ -1762,7 +1784,9 @@ if [ "$1" = "--version" ]; then echo "v22.14.0"; exit 0; fi
 exit 0`,
     );
 
-    const result = callEnsureSupportedRuntime(fakeBin);
+    // Use isolated bin that excludes node/npm (on Ubuntu /bin == /usr/bin so both are always present)
+    const isolatedBin = createIsolatedBin(["bash", "cut", "grep", "sed", "cat", "ls", "id"]);
+    const result = callEnsureSupportedRuntime(fakeBin, { PATH: `${fakeBin}:${isolatedBin}` });
 
     expect(result.status).not.toBe(0);
     expect(`${result.stdout}${result.stderr}`).toMatch(/npm was not found on PATH/);
