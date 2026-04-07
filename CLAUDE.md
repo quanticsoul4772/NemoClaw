@@ -32,12 +32,11 @@ cd nemoclaw && npm install && npm run build && cd ..  # TypeScript plugin
 cd nemoclaw-blueprint && uv sync && cd ..             # Python deps
 
 # Build
-npm run build:cli                 # compile root src/ → dist/ (required before npm test)
 cd nemoclaw && npm run build      # compile TypeScript plugin
 cd nemoclaw && npm run dev        # watch mode
 
 # Test
-npm test                          # root-level tests (Vitest) — requires build:cli first
+npm test                          # root-level tests (Vitest)
 cd nemoclaw && npm test           # plugin unit tests (Vitest)
 
 # Lint / check
