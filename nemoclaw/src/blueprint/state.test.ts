@@ -58,6 +58,22 @@ describe("blueprint/state", () => {
       store.set(STATE_PATH, JSON.stringify(saved));
       expect(loadState()).toEqual(saved);
     });
+
+    it("returns blank state when file contains invalid JSON", () => {
+      // Simulates a partial write or disk corruption — plugin must not crash.
+      store.set(STATE_PATH, '{ "lastRunId": "run-1", corrupted }{{{');
+      const state = loadState();
+      expect(state.lastRunId).toBeNull();
+      expect(state.lastAction).toBeNull();
+      expect(state.updatedAt).toBeDefined();
+    });
+
+    it("returns blank state when file is empty", () => {
+      store.set(STATE_PATH, "");
+      const state = loadState();
+      expect(state.lastRunId).toBeNull();
+      expect(state.updatedAt).toBeDefined();
+    });
   });
 
   describe("saveState", () => {
