@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const STATE_DIR = join(process.env.HOME ?? "/tmp", ".nemoclaw", "state");
@@ -57,13 +57,20 @@ export function saveState(state: NemoClawState): void {
   ensureStateDir();
   state.updatedAt = new Date().toISOString();
   state.createdAt ??= state.updatedAt;
-  writeFileSync(statePath(), JSON.stringify(state, null, 2));
+  // Atomic write: write to a sibling .tmp file then rename into place.
+  // If the process is killed mid-write the real state file is untouched.
+  const dest = statePath();
+  const tmp = `${dest}.tmp`;
+  writeFileSync(tmp, JSON.stringify(state, null, 2));
+  renameSync(tmp, dest);
 }
 
 export function clearState(): void {
   ensureStateDir();
-  const path = statePath();
-  if (existsSync(path)) {
-    writeFileSync(path, JSON.stringify(blankState(), null, 2));
+  const dest = statePath();
+  if (existsSync(dest)) {
+    const tmp = `${dest}.tmp`;
+    writeFileSync(tmp, JSON.stringify(blankState(), null, 2));
+    renameSync(tmp, dest);
   }
 }
