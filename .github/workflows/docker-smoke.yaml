@@ -47,12 +47,13 @@ jobs:
 
       - name: Verify image starts
         run: |
-          # Container should start and exit cleanly with bash entrypoint
-          docker run --rm nemoclaw-smoke-test -c "echo 'Container started successfully'"
+          # Use --entrypoint bash because nemoclaw-start is the production
+          # ENTRYPOINT (a daemon launcher); verification steps need a shell.
+          docker run --rm --entrypoint bash nemoclaw-smoke-test -c "echo 'Container started successfully'"
 
       - name: Verify plugin files exist
         run: |
-          docker run --rm nemoclaw-smoke-test -c "
+          docker run --rm --entrypoint bash nemoclaw-smoke-test -c "
             test -f /opt/nemoclaw/dist/index.js && echo '✓ Plugin JS built'
             test -f /opt/nemoclaw/openclaw.plugin.json && echo '✓ Plugin manifest present'
             test -d /opt/nemoclaw/node_modules && echo '✓ Node modules installed'
@@ -62,14 +63,14 @@ jobs:
 
       - name: Verify Python venv works
         run: |
-          docker run --rm nemoclaw-smoke-test -c "
+          docker run --rm --entrypoint bash nemoclaw-smoke-test -c "
             python3 -c 'import yaml; print(\"✓ PyYAML available\")'
             python3 -c 'import json; print(\"✓ Python stdlib ok\")'
           "
 
       - name: Verify sandbox user and permissions
         run: |
-          docker run --rm nemoclaw-smoke-test -c "
+          docker run --rm --entrypoint bash nemoclaw-smoke-test -c "
             whoami | grep -q sandbox && echo '✓ Running as sandbox user'
             test -d /sandbox/.openclaw && echo '✓ OpenClaw dir exists'
             test -d /sandbox/.nemoclaw && echo '✓ NemoClaw dir exists'
