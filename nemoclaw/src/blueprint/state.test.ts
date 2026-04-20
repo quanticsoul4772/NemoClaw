@@ -22,6 +22,13 @@ vi.mock("node:fs", async (importOriginal) => {
     writeFileSync: (p: string, data: string) => {
       store.set(p, data);
     },
+    renameSync: (src: string, dst: string) => {
+      const data = store.get(src);
+      if (data !== undefined) {
+        store.set(dst, data);
+        store.delete(src);
+      }
+    },
   };
 });
 
@@ -127,6 +134,16 @@ describe("blueprint/state", () => {
       saveState(state);
       const loaded = loadState();
       expect(loaded.createdAt).toBe("2026-01-01T00:00:00.000Z");
+    });
+
+    it("leaves no .tmp file after a successful save (atomic write)", () => {
+      // Verifies the write-then-rename pattern: the .tmp staging file must not
+      // remain visible once saveState returns.
+      const state = loadState();
+      state.lastRunId = "run-atomic";
+      saveState(state);
+      expect(store.has(`${STATE_PATH}.tmp`)).toBe(false);
+      expect(store.has(STATE_PATH)).toBe(true);
     });
   });
 
