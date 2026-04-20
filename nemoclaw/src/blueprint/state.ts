@@ -69,10 +69,16 @@ export function loadState(): NemoClawState {
   if (!existsSync(path)) {
     return blankState();
   }
-  // Merge over blankState so that state files created before shields fields
-  // were added still return valid NemoClawState with sensible defaults.
-  const persisted = JSON.parse(readFileSync(path, "utf-8")) as Partial<NemoClawState>;
-  return { ...blankState(), ...persisted };
+  try {
+    // Merge over blankState so that state files created before shields fields
+    // were added still return valid NemoClawState with sensible defaults.
+    const persisted = JSON.parse(readFileSync(path, "utf-8")) as Partial<NemoClawState>;
+    return { ...blankState(), ...persisted };
+  } catch {
+    // State file exists but is unreadable or corrupt (e.g. partial write, disk error).
+    // Treat as missing state rather than crashing the plugin.
+    return blankState();
+  }
 }
 
 export function saveState(state: NemoClawState): void {

@@ -82,6 +82,22 @@ describe("blueprint/state", () => {
       expect(loadState()).toEqual(saved);
     });
 
+    it("returns blank state when file contains invalid JSON", () => {
+      // Simulates a partial write or disk corruption — plugin must not crash.
+      store.set(STATE_PATH, '{ "lastRunId": "run-1", corrupted }{{{');
+      const state = loadState();
+      expect(state.lastRunId).toBeNull();
+      expect(state.lastAction).toBeNull();
+      expect(state.updatedAt).toBeDefined();
+    });
+
+    it("returns blank state when file is empty", () => {
+      store.set(STATE_PATH, "");
+      const state = loadState();
+      expect(state.lastRunId).toBeNull();
+      expect(state.updatedAt).toBeDefined();
+    });
+
     it("fills shields defaults for pre-shields state files", () => {
       // Simulate a state file written before shields fields were added
       const legacyState = {
