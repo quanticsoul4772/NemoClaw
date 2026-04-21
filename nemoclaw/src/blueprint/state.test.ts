@@ -22,13 +22,6 @@ vi.mock("node:fs", async (importOriginal) => {
     writeFileSync: (p: string, data: string) => {
       store.set(p, data);
     },
-    renameSync: (src: string, dst: string) => {
-      const data = store.get(src);
-      if (data !== undefined) {
-        store.set(dst, data);
-        store.delete(src);
-      }
-    },
   };
 });
 
@@ -80,22 +73,6 @@ describe("blueprint/state", () => {
       };
       store.set(STATE_PATH, JSON.stringify(saved));
       expect(loadState()).toEqual(saved);
-    });
-
-    it("returns blank state when file contains invalid JSON", () => {
-      // Simulates a partial write or disk corruption — plugin must not crash.
-      store.set(STATE_PATH, '{ "lastRunId": "run-1", corrupted }{{{');
-      const state = loadState();
-      expect(state.lastRunId).toBeNull();
-      expect(state.lastAction).toBeNull();
-      expect(state.updatedAt).toBeDefined();
-    });
-
-    it("returns blank state when file is empty", () => {
-      store.set(STATE_PATH, "");
-      const state = loadState();
-      expect(state.lastRunId).toBeNull();
-      expect(state.updatedAt).toBeDefined();
     });
 
     it("fills shields defaults for pre-shields state files", () => {
@@ -150,16 +127,6 @@ describe("blueprint/state", () => {
       saveState(state);
       const loaded = loadState();
       expect(loaded.createdAt).toBe("2026-01-01T00:00:00.000Z");
-    });
-
-    it("leaves no .tmp file after a successful save (atomic write)", () => {
-      // Verifies the write-then-rename pattern: the .tmp staging file must not
-      // remain visible once saveState returns.
-      const state = loadState();
-      state.lastRunId = "run-atomic";
-      saveState(state);
-      expect(store.has(`${STATE_PATH}.tmp`)).toBe(false);
-      expect(store.has(STATE_PATH)).toBe(true);
     });
   });
 

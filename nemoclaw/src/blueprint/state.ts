@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -69,36 +69,23 @@ export function loadState(): NemoClawState {
   if (!existsSync(path)) {
     return blankState();
   }
-  try {
-    // Merge over blankState so that state files created before shields fields
-    // were added still return valid NemoClawState with sensible defaults.
-    const persisted = JSON.parse(readFileSync(path, "utf-8")) as Partial<NemoClawState>;
-    return { ...blankState(), ...persisted };
-  } catch {
-    // State file exists but is unreadable or corrupt (e.g. partial write, disk error).
-    // Treat as missing state rather than crashing the plugin.
-    return blankState();
-  }
+  // Merge over blankState so that state files created before shields fields
+  // were added still return valid NemoClawState with sensible defaults.
+  const persisted = JSON.parse(readFileSync(path, "utf-8")) as Partial<NemoClawState>;
+  return { ...blankState(), ...persisted };
 }
 
 export function saveState(state: NemoClawState): void {
   ensureStateDir();
   state.updatedAt = new Date().toISOString();
   state.createdAt ??= state.updatedAt;
-  // Atomic write: write to a sibling .tmp file then rename into place.
-  // If the process is killed mid-write the real state file is untouched.
-  const dest = statePath();
-  const tmp = `${dest}.tmp`;
-  writeFileSync(tmp, JSON.stringify(state, null, 2));
-  renameSync(tmp, dest);
+  writeFileSync(statePath(), JSON.stringify(state, null, 2));
 }
 
 export function clearState(): void {
   ensureStateDir();
-  const dest = statePath();
-  if (existsSync(dest)) {
-    const tmp = `${dest}.tmp`;
-    writeFileSync(tmp, JSON.stringify(blankState(), null, 2));
-    renameSync(tmp, dest);
+  const path = statePath();
+  if (existsSync(path)) {
+    writeFileSync(path, JSON.stringify(blankState(), null, 2));
   }
 }
