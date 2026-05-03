@@ -120,7 +120,7 @@ export const COMMANDS: readonly CommandDef[] = [
   {
     usage: "nemoclaw <name> logs",
     description: "Stream sandbox logs",
-    flags: "[--follow]",
+    flags: "[--follow] [--tail <lines>|-n <lines>] [--since <duration>]",
     group: "Sandbox Management",
     scope: "sandbox",
   },
@@ -335,6 +335,7 @@ export const COMMANDS: readonly CommandDef[] = [
   {
     usage: "nemoclaw status",
     description: "Show sandbox list and service status",
+    flags: "[--json]",
     group: "Services",
     scope: "global",
   },

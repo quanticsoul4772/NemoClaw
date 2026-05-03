@@ -5,20 +5,35 @@
 
 import { Args, Command, Flags } from "@oclif/core";
 
-type RuntimeBridge = {
+type ChannelsRuntimeBridge = {
   sandboxChannelsAdd: (sandboxName: string, args?: string[]) => Promise<void>;
   sandboxChannelsRemove: (sandboxName: string, args?: string[]) => Promise<void>;
   sandboxChannelsStart: (sandboxName: string, args?: string[]) => Promise<void>;
   sandboxChannelsStop: (sandboxName: string, args?: string[]) => Promise<void>;
 };
 
-let runtimeBridgeFactory = (): RuntimeBridge => require("../nemoclaw") as RuntimeBridge;
+let runtimeBridgeFactory = (): ChannelsRuntimeBridge => {
+  const actions = require("./policy-channel-actions") as {
+    addSandboxChannel: ChannelsRuntimeBridge["sandboxChannelsAdd"];
+    removeSandboxChannel: ChannelsRuntimeBridge["sandboxChannelsRemove"];
+    startSandboxChannel: ChannelsRuntimeBridge["sandboxChannelsStart"];
+    stopSandboxChannel: ChannelsRuntimeBridge["sandboxChannelsStop"];
+  };
+  return {
+    sandboxChannelsAdd: actions.addSandboxChannel,
+    sandboxChannelsRemove: actions.removeSandboxChannel,
+    sandboxChannelsStart: actions.startSandboxChannel,
+    sandboxChannelsStop: actions.stopSandboxChannel,
+  };
+};
 
-export function setChannelsRuntimeBridgeFactoryForTest(factory: () => RuntimeBridge): void {
+export function setChannelsRuntimeBridgeFactoryForTest(
+  factory: () => ChannelsRuntimeBridge,
+): void {
   runtimeBridgeFactory = factory;
 }
 
-function getRuntimeBridge(): RuntimeBridge {
+function getRuntimeBridge(): ChannelsRuntimeBridge {
   return runtimeBridgeFactory();
 }
 
