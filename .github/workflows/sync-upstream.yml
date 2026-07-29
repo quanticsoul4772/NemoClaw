@@ -36,7 +36,7 @@ jobs:
 
           # Generate diff from HEAD to upstream, excluding .github/workflows
           # (GITHUB_TOKEN cannot push workflow file changes)
-          git diff HEAD upstream/main -- . ':(exclude).github/workflows/**' > /tmp/upstream.patch
+          git diff --binary HEAD upstream/main -- . ':(exclude).github/workflows/**' > /tmp/upstream.patch
 
           if [ ! -s /tmp/upstream.patch ]; then
             echo "$UPSTREAM_NEW upstream commit(s) found, but all changes are in .github/workflows — skipping"
