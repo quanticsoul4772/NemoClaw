@@ -4,29 +4,39 @@
 /**
  * Public command display registry derived from oclif command metadata.
  *
- * The command entries shown in root help, docs checks, and legacy dispatch
- * helpers are colocated with the oclif command entrypoints under
- * `src/commands/**` via `withCommandDisplay(...)`. This module projects that
- * metadata into the historical `CommandDef` shape while command discovery
- * itself stays owned by oclif.
+ * The command entries shown in root help, docs checks, and public dispatch
+ * helpers are exposed through the oclif command entrypoints under
+ * `src/commands/**`. This module projects that metadata into the historical
+ * `CommandDef` shape while command discovery itself stays owned by oclif.
  *
  * Usage strings use "nemoclaw" as a canonical placeholder. The exported
  * {@link brandedUsage} helper replaces it with the active CLI_NAME
  * (e.g. "nemohermes") for display.
  */
 
-import { CLI_NAME } from "./branding";
-import type { CommandDisplayEntry, CommandGroup } from "./command-display";
+import { CLI_DISPLAY_NAME, CLI_NAME } from "./branding";
+import type { CommandGroup, PublicCommandDisplayEntry } from "./command-display";
 import { getRegisteredOclifCommandsMetadata } from "./oclif-metadata";
+import { PUBLIC_DISPLAY_ENTRIES } from "./public-display-defaults";
+import {
+  globalRouteTokenVariants,
+  sandboxRouteTokens,
+  sandboxRouteTokenVariants,
+} from "./public-route-metadata";
 
 export type { CommandGroup } from "./command-display";
 
-/** Replace the canonical "nemoclaw" prefix in a usage string with CLI_NAME. */
-export function brandedUsage(usage: string): string {
-  return usage.replace(/^nemoclaw/, CLI_NAME);
+/** Replace canonical NemoClaw public copy with active CLI/agent branding. */
+export function brandedPublicText(text: string): string {
+  return text.replace(/nemoclaw/g, CLI_NAME).replace(/NemoClaw/g, CLI_DISPLAY_NAME);
 }
 
-export interface CommandDef extends Omit<CommandDisplayEntry, "order"> {
+/** Replace the canonical "nemoclaw" prefix in a usage string with CLI_NAME. */
+export function brandedUsage(usage: string): string {
+  return brandedPublicText(usage.replace(/^nemoclaw/, CLI_NAME));
+}
+
+export interface CommandDef extends Omit<PublicCommandDisplayEntry, "order"> {
   /** Registered internal oclif command ID that handles this public command shape. */
   commandId: string;
 }
@@ -38,28 +48,29 @@ export const GROUP_ORDER: readonly CommandGroup[] = [
   "Skills",
   "Policy Presets",
   "Messaging Channels",
+  "MCP Servers",
   "Compatibility Commands",
   "Services",
   "Troubleshooting",
   "Credentials",
   "Backup",
   "Upgrade",
+  "Resources",
   "Cleanup",
 ] as const;
 
-type RegisteredCommandDisplayEntry = CommandDisplayEntry & { commandId: string };
+type RegisteredCommandDisplayEntry = PublicCommandDisplayEntry & { commandId: string };
 
 function displayEntriesFromOclifMetadata(): CommandDef[] {
   const entries: RegisteredCommandDisplayEntry[] = [];
   for (const [commandId, metadata] of Object.entries(getRegisteredOclifCommandsMetadata())) {
-    for (const displayEntry of metadata.display ?? []) {
+    const publicDisplay = metadata.publicDisplay ?? PUBLIC_DISPLAY_ENTRIES[commandId] ?? [];
+    for (const displayEntry of publicDisplay) {
       entries.push({ ...displayEntry, commandId });
     }
   }
 
-  return entries
-    .sort((a, b) => a.order - b.order)
-    .map(({ order: _order, ...entry }) => entry);
+  return entries.sort((a, b) => a.order - b.order).map(({ order: _order, ...entry }) => entry);
 }
 
 /** All CLI display commands. Hidden entries are included for dispatch helpers. */
@@ -91,7 +102,7 @@ export function commandsByGroup(): Map<CommandGroup, CommandDef[]> {
       .map((c) => ({
         ...c,
         usage: brandedUsage(c.usage),
-        description: c.description.replace(/nemoclaw/g, CLI_NAME),
+        description: brandedPublicText(c.description),
       }));
     if (cmds.length > 0) {
       grouped.set(group, cmds);
@@ -110,6 +121,29 @@ export function canonicalUsageList(): string[] {
     .sort();
 }
 
+type PublicFlagMetadata = {
+  allowNo?: boolean;
+  hidden?: boolean;
+};
+
+/** Sorted public long flags and their help source keyed by canonical usage. */
+export function canonicalCommandFlagLines(): string[] {
+  const metadata = getRegisteredOclifCommandsMetadata();
+  return visibleCommands()
+    .map((command) => {
+      const flags = Object.entries(metadata[command.commandId]?.flags ?? {})
+        .flatMap(([name, value]) => {
+          const flag = value as PublicFlagMetadata;
+          if (flag.hidden) return [];
+          return flag.allowNo ? [`--${name}`, `--no-${name}`] : [`--${name}`];
+        })
+        .sort();
+      const helpSource = metadata[command.commandId]?.customHelp === true ? "rendered" : "metadata";
+      return `${command.usage}\t${helpSource}\t${flags.join(" ")}`;
+    })
+    .sort();
+}
+
 /**
  * First token(s) after "nemoclaw" for each global command.
  *
@@ -117,31 +151,71 @@ export function canonicalUsageList(): string[] {
  * For flag-style like "nemoclaw --help", extracts "--help".
  * For "nemoclaw onboard --from", extracts "onboard".
  */
+function hasRegisteredChildCommand(commandId: string): boolean {
+  return Object.keys(getRegisteredOclifCommandsMetadata()).some((id) =>
+    id.startsWith(`${commandId}:`),
+  );
+}
+
 export function globalCommandTokens(): Set<string> {
   const tokens = new Set<string>();
-  for (const cmd of globalCommands()) {
-    const rest = cmd.usage.replace(/^nemoclaw\s+/, "");
-    const token = rest.split(/\s+/)[0];
-    tokens.add(token);
+  for (const commandId of Object.keys(getRegisteredOclifCommandsMetadata())) {
+    for (const routeTokens of globalRouteTokenVariants(commandId)) {
+      const [token] = routeTokens;
+      if (token) tokens.add(token);
+    }
   }
   return tokens;
 }
 
 /**
- * Action tokens for sandbox commands.
+ * Leaf global command IDs that should execute directly by oclif command ID.
  *
- * For "nemoclaw <name> connect", extracts "connect".
- * Includes empty string for default connect behavior.
+ * Derived from registered oclif metadata by excluding nested IDs and command
+ * IDs that have registered child commands.
  */
+export function directGlobalCommandIds(): Set<string> {
+  const ids = new Set<string>();
+  for (const commandId of Object.keys(getRegisteredOclifCommandsMetadata())) {
+    if (commandId.includes(":")) continue;
+    if (hasRegisteredChildCommand(commandId)) continue;
+    ids.add(commandId);
+  }
+  return ids;
+}
+
 export function sandboxActionTokens(): string[] {
   const seen = new Set<string>();
   const tokens: string[] = [];
-  for (const cmd of sandboxCommands()) {
-    const rest = cmd.usage.replace(/^nemoclaw\s+<name>\s*/, "");
-    const token = rest.split(/\s+/)[0];
-    if (!seen.has(token)) {
+  for (const commandId of Object.keys(getRegisteredOclifCommandsMetadata())) {
+    const [token] = sandboxRouteTokens(commandId) ?? [];
+    if (token && !seen.has(token)) {
       seen.add(token);
       tokens.push(token);
+    }
+  }
+  if (!seen.has("")) {
+    tokens.push("");
+  }
+  return tokens;
+}
+
+/**
+ * First-level sandbox action tokens for dispatch detection, including legacy
+ * hyphenated aliases (e.g. `policy-add`) alongside the canonical action tokens.
+ * The public grammar router uses this so a legacy spelling is still recognized
+ * as sandbox-first, while help and grouping use the canonical-only
+ * `sandboxActionTokens`.
+ */
+export function sandboxActionTokensForDispatch(): string[] {
+  const seen = new Set<string>();
+  const tokens: string[] = [];
+  for (const commandId of Object.keys(getRegisteredOclifCommandsMetadata())) {
+    for (const [token] of sandboxRouteTokenVariants(commandId)) {
+      if (token && !seen.has(token)) {
+        seen.add(token);
+        tokens.push(token);
+      }
     }
   }
   if (!seen.has("")) {

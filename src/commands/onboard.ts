@@ -1,22 +1,35 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import Command from "../lib/commands/onboard";
-import { withCommandDisplay } from "../lib/cli/command-display";
+import { runOnboardAction } from "../lib/actions/global";
+import { NemoClawCommand } from "../lib/cli/nemoclaw-oclif-command";
+import { createOnboardActionRuntimeDeps } from "../lib/cli/onboard-runtime-deps";
+import {
+  buildOnboardFlags,
+  type OnboardFlags,
+  onboardExamples,
+  onboardUsage,
+} from "../lib/onboard/command-support";
 
-export default withCommandDisplay(Command, [
-  {
-    usage: "nemoclaw onboard",
-    description: "Configure inference endpoint and credentials",
-    group: "Getting Started",
-    scope: "global",
-    order: 0,
-  },
-  {
-    usage: "nemoclaw onboard --from",
-    description: "Use a custom Dockerfile for the sandbox image",
-    group: "Getting Started",
-    scope: "global",
-    order: 1,
-  },
-]);
+export default class OnboardCliCommand extends NemoClawCommand {
+  static id = "onboard";
+  static strict = true;
+  static summary = "Configure inference endpoint and credentials (--agent to choose runtime)";
+  static description = "Configure inference, credentials, and sandbox settings.";
+  static usage = onboardUsage;
+  static examples = onboardExamples;
+  static flags = buildOnboardFlags({ includeEvents: true });
+
+  public async run(): Promise<void> {
+    const { flags } = await this.parse(OnboardCliCommand);
+    const onboardFlags = flags as OnboardFlags;
+    if (onboardFlags.events === "jsonl") {
+      const { withOnboardJsonlEventStream } = await import("../lib/onboard/machine/jsonl-events");
+      await withOnboardJsonlEventStream(() =>
+        runOnboardAction(onboardFlags, createOnboardActionRuntimeDeps()),
+      );
+      return;
+    }
+    await runOnboardAction(onboardFlags, createOnboardActionRuntimeDeps());
+  }
+}

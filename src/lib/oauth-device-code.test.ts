@@ -7,7 +7,7 @@ import {
   mintAgentKeyWithAccessToken,
   pollForToken,
   refreshAccessTokenWithRefreshToken,
-} from "../../dist/lib/oauth-device-code";
+} from "./oauth-device-code";
 
 describe("pollForToken", () => {
   it("rejects successful token responses missing an access token", async () => {
@@ -42,13 +42,20 @@ describe("pollForToken", () => {
 });
 
 describe("refreshAccessTokenWithRefreshToken", () => {
-  it("uses the host-side refresh-token grant form body", async () => {
-    const calls: Array<{ url: string; body: string; signal: AbortSignal | null }> = [];
+  it("sends the refresh token in x-nous-refresh-token instead of the form body", async () => {
+    const calls: Array<{
+      url: string;
+      body: string;
+      refreshHeader: string | null;
+      signal: AbortSignal | null;
+    }> = [];
     const token = await refreshAccessTokenWithRefreshToken("refresh-1", {
       fetch: (async (url, init) => {
+        const headers = new Headers(init?.headers);
         calls.push({
           url: String(url),
           body: String(init?.body ?? ""),
+          refreshHeader: headers.get("x-nous-refresh-token"),
           signal: init?.signal instanceof AbortSignal ? init.signal : null,
         });
         return new Response(
@@ -65,18 +72,11 @@ describe("refreshAccessTokenWithRefreshToken", () => {
 
     expect(token.access_token).toBe("access-2");
     expect(token.refresh_token).toBe("refresh-2");
-    expect(calls[0]?.url).toBe(
-      "https://portal.nousresearch.com/api/oauth/token",
-    );
-    expect(new URLSearchParams(calls[0]?.body).get("grant_type")).toBe(
-      "refresh_token",
-    );
-    expect(new URLSearchParams(calls[0]?.body).get("refresh_token")).toBe(
-      "refresh-1",
-    );
-    expect(new URLSearchParams(calls[0]?.body).get("client_id")).toBe(
-      "hermes-cli",
-    );
+    expect(calls[0]?.url).toBe("https://portal.nousresearch.com/api/oauth/token");
+    expect(new URLSearchParams(calls[0]?.body).get("grant_type")).toBe("refresh_token");
+    expect(new URLSearchParams(calls[0]?.body).get("refresh_token")).toBeNull();
+    expect(calls[0]?.refreshHeader).toBe("refresh-1");
+    expect(new URLSearchParams(calls[0]?.body).get("client_id")).toBe("hermes-cli");
     expect(calls[0]?.signal).toBeInstanceOf(AbortSignal);
   });
 
@@ -130,9 +130,7 @@ describe("mintAgentKeyWithAccessToken", () => {
     });
 
     expect(key.api_key).toBe("agent-key-1");
-    expect(calls[0]?.url).toBe(
-      "https://portal.nousresearch.com/api/oauth/agent-key",
-    );
+    expect(calls[0]?.url).toBe("https://portal.nousresearch.com/api/oauth/agent-key");
     expect(calls[0]?.auth).toBe("Bearer access-1");
     expect(JSON.parse(calls[0]?.body ?? "{}")).toEqual({
       min_ttl_seconds: 120,

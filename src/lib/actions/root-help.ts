@@ -2,7 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { AGENT_PRODUCT_NAME, CLI_DISPLAY_NAME, CLI_NAME } from "../cli/branding";
-import { commandsByGroup, visibleCommands, type CommandDef } from "../cli/command-registry";
+import {
+  brandedPublicText,
+  type CommandDef,
+  commandsByGroup,
+  visibleCommands,
+} from "../cli/command-registry";
 import { getRegisteredOclifCommandSummary } from "../cli/oclif-metadata";
 import { getVersion } from "../core/version";
 
@@ -23,7 +28,9 @@ function getDisplayDescription(command: CommandDef): string {
   if (hasDisplaySpecificDescription(command)) {
     return command.description;
   }
-  return getRegisteredOclifCommandSummary(command.commandId) ?? command.description;
+  return brandedPublicText(
+    getRegisteredOclifCommandSummary(command.commandId) ?? command.description,
+  );
 }
 
 export function version(): void {
@@ -39,6 +46,12 @@ export function help(): void {
   lines.push("");
   lines.push(`  ${B}${G}${CLI_DISPLAY_NAME}${R}  ${D}v${getVersion()}${R}`);
   lines.push(`  ${D}Deploy more secure, always-on AI assistants with a single command.${R}`);
+  lines.push(
+    `  ${D}Global commands run without a sandbox-name prefix; sandbox commands start with a sandbox name.${R}`,
+  );
+  lines.push(
+    `  ${D}Use \`${CLI_NAME} status\` for the global overview, and \`${CLI_NAME} <name> status\` for one sandbox.${R}`,
+  );
 
   for (const [group, cmds] of grouped) {
     lines.push("");
@@ -67,23 +80,33 @@ export function help(): void {
   lines.push("");
   lines.push(`  ${G}Uninstall flags:${R}`);
   lines.push(`    --yes${" ".repeat(29)}Skip the confirmation prompt`);
-  lines.push(`    --keep-openshell${" ".repeat(18)}Leave the openshell binary installed`);
-  lines.push(`    --delete-models${" ".repeat(19)}Remove ${CLI_DISPLAY_NAME}-pulled Ollama models`);
+  lines.push(`    --keep-openshell${" ".repeat(18)}Leave the OpenShell binary installed`);
+  lines.push(
+    `    --delete-models${" ".repeat(19)}Remove all Ollama models and non-credential Hugging Face cache data (authentication files remain)`,
+  );
+  lines.push(
+    `    --destroy-user-data${" ".repeat(15)}Skip eligible fresh backups; remove preserved user data; remove managed CLI shims only when no sibling gateway is confirmed`,
+  );
+  lines.push(
+    `    --all-gateway-ports${" ".repeat(15)}Uninstall every gateway port on this host, not only NEMOCLAW_GATEWAY_PORT`,
+  );
 
   lines.push("");
   lines.push(`  ${G}Reconfiguration (after onboard):${R}`);
   lines.push(
-    `    ${D}• Change inference model:  nemoclaw inference set --model <model> --provider <provider>${R}`,
+    `    ${D}• Check inference route:   ${CLI_NAME} inference get${R}`,
+    `    ${D}• Change inference model:  ${CLI_NAME} inference set --model <model> --provider <provider>${R}`,
   );
-  lines.push(`    ${D}• Add network presets:     use the policy-add command on your sandbox${R}`);
+  lines.push(`    ${D}• Add network presets:     use the policy add command on your sandbox${R}`);
   lines.push(
     `    ${D}• Change credentials:      credentials reset <PROVIDER>, then re-run onboard${R}`,
   );
-  lines.push(`    ${D}• Agent config is read-only inside the sandbox (Landlock enforced).${R}`);
   lines.push(
-    `    ${D}  To change ${AGENT_PRODUCT_NAME} settings, re-run onboard to rebuild the sandbox.${R}`,
+    `    ${D}• Agent config is writable in the default sandbox so ${AGENT_PRODUCT_NAME} can manage runtime state.${R}`,
   );
-
+  lines.push(
+    `    ${D}  Use host-side commands or re-run onboard for durable ${AGENT_PRODUCT_NAME} settings.${R}`,
+  );
   lines.push("");
   lines.push(`  ${D}Powered by NVIDIA OpenShell · Nemotron · Agent Toolkit`);
   lines.push(`  Credentials registered with the OpenShell gateway${R}`);

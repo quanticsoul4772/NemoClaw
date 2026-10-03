@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { spawnSyncMock } = vi.hoisted(() => ({
   spawnSyncMock: vi.fn(),
@@ -19,6 +19,7 @@ import {
   resolveLinuxUnmount,
   runShareMount,
   runShareStatus,
+  ShareCommandError,
 } from "./share-command";
 import type { ShareCommandDeps } from "./share-command-deps";
 
@@ -29,17 +30,12 @@ function makeDeps(overrides: Partial<ShareCommandDeps> = {}): ShareCommandDeps {
       output: "Host openshell-alpha\n  HostName 127.0.0.1\n",
     })),
     ensureLive: vi.fn(async () => undefined),
+    checkSandboxPathExists: vi.fn(() => true),
     colorGreen: "",
     colorReset: "",
     cliName: "nemoclaw",
     ...overrides,
   };
-}
-
-function installExitThrow(): ReturnType<typeof vi.spyOn> {
-  return vi.spyOn(process, "exit").mockImplementation(((code?: number | string | null) => {
-    throw new Error(`process.exit:${String(code)}`);
-  }) as never);
 }
 
 function mountedAt(dir: string): string {
@@ -63,6 +59,8 @@ describe("share-command helpers", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+    vi.resetModules();
   });
 
   it("builds the default mount directory under ~/.nemoclaw/mounts", () => {
@@ -77,6 +75,20 @@ describe("share-command helpers", () => {
         process.env.HOME = previousHome;
       }
     }
+  });
+
+  it("builds the default mount directory under the selected nondefault gateway root", async () => {
+    vi.stubEnv("HOME", "/home/tester");
+    vi.stubEnv("NEMOCLAW_GATEWAY_PORT", "9123");
+    vi.resetModules();
+    const freshShareCommand = await import("./share-command");
+
+    expect(freshShareCommand.defaultShareMountDir("alpha")).toBe(
+      "/home/tester/.nemoclaw/gateways/9123/mounts/alpha",
+    );
+    expect(freshShareCommand.defaultShareMountDir("alpha")).not.toBe(
+      "/home/tester/.nemoclaw/mounts/alpha",
+    );
   });
 
   it("falls back to mount output when mountpoint is unavailable", () => {
@@ -128,20 +140,14 @@ describe("share-command helpers", () => {
 });
 
 describe("ShareCommand mount/status actions", () => {
-  let exitSpy: ReturnType<typeof installExitThrow>;
-  let errorSpy: ReturnType<typeof vi.spyOn>;
   let logSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     spawnSyncMock.mockReset();
-    exitSpy = installExitThrow();
-    errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
   });
 
   afterEach(() => {
-    exitSpy.mockRestore();
-    errorSpy.mockRestore();
     logSpy.mockRestore();
     vi.restoreAllMocks();
   });
@@ -162,7 +168,8 @@ describe("ShareCommand mount/status actions", () => {
           sshfsConfigPath = args[configFlagIndex + 1];
           expect(fs.statSync(sshfsConfigPath).mode & 0o777).toBe(0o600);
           expect(args).toContain("sftp_server=/usr/lib/openssh/sftp-server");
-          expect(args).toContain("openshell-alpha:/workspace");
+          expect(args).toContain("openshell-alpha.default:/workspace");
+          expect(args).not.toContain("openshell-alpha:/workspace");
           expect(args.at(-1)).toBe(localMount);
           return { status: 0, stdout: "", stderr: "" };
         }
@@ -175,8 +182,13 @@ describe("ShareCommand mount/status actions", () => {
       expect(deps.getSshConfig).toHaveBeenCalledWith("alpha");
       expect(spawnSyncMock).toHaveBeenCalledWith(
         "sshfs",
-        expect.arrayContaining(["openshell-alpha:/workspace", localMount]),
+        expect.arrayContaining(["openshell-alpha.default:/workspace", localMount]),
         expect.objectContaining({ timeout: 30_000 }),
+      );
+      expect(spawnSyncMock).not.toHaveBeenCalledWith(
+        "sshfs",
+        expect.arrayContaining(["openshell-alpha:/workspace"]),
+        expect.anything(),
       );
       expect(sshfsConfigPath).not.toBe("");
       expect(fs.existsSync(sshfsConfigPath)).toBe(false);
@@ -198,13 +210,11 @@ describe("ShareCommand mount/status actions", () => {
       return { status: 1, stdout: "", stderr: "" };
     });
 
-    await expect(runShareMount({ sandboxName: "alpha" }, deps)).rejects.toThrow(
-      "process.exit:1",
-    );
+    await expect(runShareMount({ sandboxName: "alpha" }, deps)).rejects.toThrow(ShareCommandError);
 
     expect(deps.ensureLive).not.toHaveBeenCalled();
-    expect(errorSpy.mock.calls.map((call: unknown[]) => String(call[0])).join("\n")).toContain(
-      "sshfs is not installed",
+    await expect(runShareMount({ sandboxName: "alpha" }, deps)).rejects.toThrow(
+      /sshfs is not installed/,
     );
   });
 
@@ -223,12 +233,14 @@ describe("ShareCommand mount/status actions", () => {
 
       await expect(
         runShareMount({ sandboxName: "alpha", remotePath: "/sandbox", localMount }, deps),
-      ).rejects.toThrow("process.exit:1");
+      ).rejects.toThrow(/SSHFS mount failed/);
 
-      const stderr = errorSpy.mock.calls.map((call: unknown[]) => String(call[0])).join("\n");
-      expect(stderr).toContain("SSHFS mount failed");
-      expect(stderr).toContain("openssh-sftp-server");
-      expect(stderr).toContain("nemoclaw alpha rebuild --yes");
+      await expect(
+        runShareMount({ sandboxName: "alpha", remotePath: "/sandbox", localMount }, deps),
+      ).rejects.toThrow(/openssh-sftp-server/);
+      await expect(
+        runShareMount({ sandboxName: "alpha", remotePath: "/sandbox", localMount }, deps),
+      ).rejects.toThrow(/nemoclaw alpha rebuild --yes/);
     } finally {
       fs.rmSync(localMount, { recursive: true, force: true });
     }

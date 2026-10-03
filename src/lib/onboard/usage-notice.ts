@@ -6,19 +6,13 @@ import os from "node:os";
 import path from "node:path";
 
 import noticeConfig from "../../../bin/lib/usage-notice.json";
+import { GATEWAY_PORT } from "../core/ports";
+import { writeConfigFile } from "../state/config-io";
+import { nemoclawStateRoot } from "../state/state-root";
 
-export const NOTICE_ACCEPT_FLAG = "--yes-i-accept-third-party-software";
+export const NOTICE_ACCEPT_FLAG_NAME = "yes-i-accept-third-party-software";
+export const NOTICE_ACCEPT_FLAG = `--${NOTICE_ACCEPT_FLAG_NAME}`;
 export const NOTICE_ACCEPT_ENV = "NEMOCLAW_ACCEPT_THIRD_PARTY_SOFTWARE";
-export const NOTICE_CONFIG_FILE = path.join(
-  __dirname,
-  "..",
-  "..",
-  "..",
-  "bin",
-  "lib",
-  "usage-notice.json",
-);
-
 const OSC8_OPEN = "\u001B]8;;";
 const OSC8_CLOSE = "\u001B]8;;\u001B\\";
 const OSC8_TERM = "\u001B\\";
@@ -60,44 +54,11 @@ function parseJson<T>(text: string): T {
   return JSON.parse(text);
 }
 
-// Reflect.get is used throughout the codebase as a type-safe alternative to
-// direct property access on loosely-typed objects.  Unlike an `as Record<…>`
-// cast it never widens the target type and keeps loosely-typed member access
-// explicit. See also: deploy.ts, onboard.ts, ws-proxy-fix.ts.
-function readStringProperty(value: object | null, key: string): string | undefined {
-  if (!value) {
-    return undefined;
-  }
-  const property = Reflect.get(value, key);
-  return typeof property === "string" ? property : undefined;
-}
-
-function readStringArrayProperty(value: object | null, key: string): string[] | undefined {
-  if (!value) {
-    return undefined;
-  }
-  const property = Reflect.get(value, key);
-  return Array.isArray(property)
-    ? property.filter((entry): entry is string => typeof entry === "string")
-    : undefined;
-}
-
-function readLinksProperty(value: object | null, key: string): NoticeLink[] | undefined {
-  if (!value) {
-    return undefined;
-  }
-  const property = Reflect.get(value, key);
-  if (!Array.isArray(property)) {
-    return undefined;
-  }
-  return property.map((entry) => ({
-    label: readStringProperty(typeof entry === "object" && entry !== null ? entry : null, "label"),
-    url: readStringProperty(typeof entry === "object" && entry !== null ? entry : null, "url"),
-  }));
-}
-
 export function getUsageNoticeStateFile(): string {
-  return path.join(process.env.HOME || os.homedir(), ".nemoclaw", "usage-notice.json");
+  return path.join(
+    nemoclawStateRoot(process.env.HOME || os.homedir(), GATEWAY_PORT),
+    "usage-notice.json",
+  );
 }
 
 export function loadUsageNoticeConfig(): NoticeConfig {
@@ -125,15 +86,10 @@ export function hasAcceptedUsageNotice(version: string): boolean {
 
 export function saveUsageNoticeAcceptance(version: string): void {
   const stateFile = getUsageNoticeStateFile();
-  const dir = path.dirname(stateFile);
-  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-  fs.chmodSync(dir, 0o700);
-  fs.writeFileSync(
-    stateFile,
-    JSON.stringify({ acceptedVersion: version, acceptedAt: new Date().toISOString() }, null, 2),
-    { mode: 0o600 },
-  );
-  fs.chmodSync(stateFile, 0o600);
+  writeConfigFile(stateFile, {
+    acceptedVersion: version,
+    acceptedAt: new Date().toISOString(),
+  });
 }
 
 export function supportsTerminalHyperlinks(): boolean {
@@ -213,7 +169,8 @@ export async function ensureUsageNoticeConsent({
   }
 
   // credentials is still CJS
-  const ask: PromptFn = promptFn ?? (require("../credentials/store") as { prompt: PromptFn }).prompt;
+  const ask: PromptFn =
+    promptFn ?? (require("../credentials/store") as { prompt: PromptFn }).prompt;
   let answer: string;
   try {
     answer = String(await ask(`  ${config.interactivePrompt}`))
