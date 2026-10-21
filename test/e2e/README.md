@@ -14,6 +14,12 @@ The llama.cpp GPU case proves ordinary inference before approval, then uses the 
 OpenClaw owns TUI turn ordering and `chat.send` correlation.
 Fixes and regression coverage for those behaviors belong upstream.
 
+DCode Ultra readiness uses the same nonempty-content template parameter as the
+pinned managed DCode profile for the canonical and hosted model IDs. The public
+NVIDIA endpoint keeps its existing request shape. The headless check verifies
+that malformed native inference evidence stops connect before session attach;
+native response bodies remain absent from diagnostics.
+
 Interactive TUI targets require `expect`. The unified workflow installs it
 before those targets run; local runners must provide it themselves.
 
@@ -78,6 +84,15 @@ The install refuses package removals, preserving the runner's Docker and contain
   attempt evidence. A failure attempts to retain redacted container state, the
   published port mapping, and a bounded registry log tail before cleanup.
   Unavailable diagnostics do not suppress the readiness failure.
+  Trusted Portable Podman setup gives its API service a 128-task container limit
+  before registry creation. The live scenario verifies that the registry uses
+  that service's socket and has the effective limit. Setup records service,
+  user, host, and cgroup headroom in `portable-podman-process-headroom.json`.
+  It fails when RLIMIT_NPROC, service TasksMax, host-thread, or cgroup pids
+  headroom is less than 128 tasks. The live scenario requires registry HTTP 200
+  and retains
+  bounded container-cgroup diagnostics if readiness fails. Unavailable
+  diagnostics do not suppress the readiness failure.
 - `.github/workflows/podman-cpu-proof.yaml` publishes PR-only experimental runtime evidence.
 - `.github/workflows/sandbox-images.yaml` provides reusable sandbox-image build and test evidence.
   `.github/workflows/e2e.yaml` selects free-standing jobs, including `whatsapp-qr-compact` and `ollama-auth-proxy`.
